@@ -25,7 +25,7 @@ export default async function Home() {
             <Link
               key={project.id}
               href={`/projects/${project.id}`}
-              className="block p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
+              className="block p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow bg-gradient-to-tr from-indigo-100 to-white"
             >
               <div className="flex justify-between items-start">
                 <div>

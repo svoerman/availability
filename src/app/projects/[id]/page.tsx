@@ -52,7 +52,7 @@ export async function generateMetadata(
     }
 
     const project = await getProjectData(id);
-    
+
     if (!project) {
       return {
         title: 'Project Not Found',
@@ -60,14 +60,22 @@ export async function generateMetadata(
       };
     }
 
+    // Merge with parent metadata
+    const previousImages = (await parent).openGraph?.images || [];
+
     return {
-      title: `Project: ${project.name}`,
-      description: project.description || 'Project details and settings',
+      title: project.name,
+      description: project.description || 'Project Details',
+      openGraph: {
+        title: project.name,
+        description: project.description || 'Project Details',
+        images: [...previousImages],
+      },
     };
   } catch (error) {
     console.error('Error generating metadata:', error);
     return {
-      title: 'Error',
+      title: 'Project Error',
       description: 'An error occurred while loading the project',
     };
   }
