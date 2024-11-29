@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { format, addWeeks, startOfWeek, addDays, isWithinInterval } from 'date-fns';
+import { format, addWeeks, startOfWeek, addDays } from 'date-fns';
 import { User, DayPart, Status, Project } from '@prisma/client';
 
 type Props = {
@@ -193,16 +193,15 @@ export default function AvailabilityGrid({ project }: Props) {
   const handleMouseDown = (userId: number, date: Date, dayPart: DayPart) => {
     if (!isWithinProjectDates(date)) return;
     
-    const position = { userId, date, dayPart };
     setIsDragging(true);
-    setSelectionStart(position);
-    setSelectedCells([position]);
+    setSelectionStart({ userId, date, dayPart });
+    setSelectedCells([{ userId, date, dayPart }]);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleMouseEnter = (userId: number, date: Date, dayPart: DayPart) => {
     if (!isDragging || !selectionStart || !isWithinProjectDates(date)) return;
 
-    const position = { userId, date, dayPart };
     const startDate = selectionStart.date;
     const endDate = date;
 
@@ -213,7 +212,7 @@ export default function AvailabilityGrid({ project }: Props) {
 
     while (currentDate <= lastDate) {
       dates.push(new Date(currentDate));
-      currentDate.setDate(currentDate.getDate() + 1);
+      currentDate = addDays(currentDate, 1);
     }
 
     // Create selection for all cells between start and current position
