@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Project } from '@prisma/client';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 export const DAYS_OF_WEEK = [
   { value: 1, label: 'Monday' },
@@ -78,12 +80,12 @@ export default function ProjectForm({
         <label htmlFor="name" className="block text-sm font-medium text-gray-700">
           Project Name
         </label>
-        <input
+        <Input
           type="text"
           id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          className="mt-1"
           required
         />
       </div>
@@ -92,12 +94,12 @@ export default function ProjectForm({
         <label htmlFor="description" className="block text-sm font-medium text-gray-700">
           Description
         </label>
-        <textarea
+        <Textarea
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          className="mt-1"
         />
       </div>
 
@@ -105,12 +107,12 @@ export default function ProjectForm({
         <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
           Start Date
         </label>
-        <input
+        <Input
           type="date"
           id="startDate"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          className="mt-1"
           required
         />
       </div>
@@ -123,7 +125,7 @@ export default function ProjectForm({
           id="sprintStartDay"
           value={sprintStartDay}
           onChange={(e) => setSprintStartDay(Number(e.target.value))}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          className="mt-1 block w-full rounded-md border border-input bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:bg-indigo-100 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           required
         >
           {DAYS_OF_WEEK.map((day) => (

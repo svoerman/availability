@@ -57,14 +57,19 @@ export default function AvailabilityGrid({ project }: Props) {
   }, [project.id]);
 
   const getAvailability = (userId: number, date: Date, dayPart: DayPart) => {
-    return (
-      availabilityData.find(
-        (a) =>
-          a.userId === userId &&
-          a.date.split('T')[0] === format(date, 'yyyy-MM-dd') &&
-          a.dayPart === dayPart
-      )?.status || 'FREE'
-    );
+    const existingAvailability = availabilityData.find(
+      (a) =>
+        a.userId === userId &&
+        a.date.split('T')[0] === format(date, 'yyyy-MM-dd') &&
+        a.dayPart === dayPart
+    )?.status;
+
+    if (existingAvailability) return existingAvailability;
+
+    // Get day of week (0 = Sunday, 6 = Saturday)
+    const dayOfWeek = date.getDay();
+    // Return 'FREE' for weekends (Saturday and Sunday), 'WORKING' for weekdays
+    return dayOfWeek === 0 || dayOfWeek === 6 ? 'FREE' : 'WORKING';
   };
 
   const updateAvailability = async (
@@ -135,13 +140,13 @@ export default function AvailabilityGrid({ project }: Props) {
 
     switch (status) {
       case 'FREE':
-        return 'bg-red-200 hover:bg-red-300 cursor-pointer';
+        return 'bg-red-400 hover:bg-red-500 cursor-pointer';
       case 'NOT_WORKING':
-        return 'bg-orange-200 hover:bg-orange-300 cursor-pointer';
+        return 'bg-orange-400 hover:bg-orange-500 cursor-pointer';
       case 'PARTIALLY_AVAILABLE':
-        return 'bg-yellow-200 hover:bg-yellow-300 cursor-pointer';
+        return 'bg-yellow-400 hover:bg-yellow-500 cursor-pointer';
       case 'WORKING':
-        return 'bg-green-200 hover:bg-green-300 cursor-pointer';
+        return 'bg-green-400 hover:bg-green-500 cursor-pointer';
       default:
         return 'bg-gray-200 hover:bg-gray-300 cursor-pointer';
     }
@@ -189,13 +194,13 @@ export default function AvailabilityGrid({ project }: Props) {
         </h2>
       </div>
       <div className="inline-block min-w-full">
-        <div className="grid grid-cols-[auto_repeat(14,_minmax(80px,_1fr))]">
+        <div className="grid grid-cols-[auto_repeat(14,_minmax(80px,_1fr))] gap-x-[2px] bg-gray-300">
           {/* Header */}
           <div className="sticky left-0 bg-white z-10"></div>
           {dates.map((date) => (
             <div
               key={date.toString()}
-              className={`text-center py-2 border-b font-medium ${
+              className={`text-center py-2 border-b font-medium bg-white ${
                 !isWithinProjectDates(date) ? 'text-gray-400' : ''
               }`}
             >
@@ -215,7 +220,7 @@ export default function AvailabilityGrid({ project }: Props) {
               {dates.map((date) => (
                 <div
                   key={`${user.id}-${date.toString()}`}
-                  className="grid grid-rows-2 border-b"
+                  className="flex gap-x-[1px] border-b bg-gray-300"
                 >
                   {(['MORNING', 'AFTERNOON'] as DayPart[]).map((dayPart) => {
                     const status = getAvailability(user.id, date, dayPart);
@@ -226,7 +231,7 @@ export default function AvailabilityGrid({ project }: Props) {
                         className={`${getStatusColor(
                           status as Status,
                           date
-                        )} h-8 transition-colors ${withinDates ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+                        )} flex-1 h-16 transition-colors ${withinDates ? 'cursor-pointer' : 'cursor-not-allowed'}`}
                         onClick={() =>
                           withinDates &&
                           updateAvailability(
@@ -249,19 +254,19 @@ export default function AvailabilityGrid({ project }: Props) {
       </div>
       <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-200"></div>
+          <div className="w-4 h-4 bg-red-400"></div>
           <span className="text-sm">Free</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-orange-200"></div>
+          <div className="w-4 h-4 bg-orange-400"></div>
           <span className="text-sm">Not Working</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-yellow-200"></div>
+          <div className="w-4 h-4 bg-yellow-400"></div>
           <span className="text-sm">Partially Available</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-green-200"></div>
+          <div className="w-4 h-4 bg-green-400"></div>
           <span className="text-sm">Working</span>
         </div>
       </div>
