@@ -1,18 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Project } from '@prisma/client';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import ProjectForm, { ProjectFormData } from './ProjectForm';
 
 interface Props {
-  project: Project;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export default function ProjectSettingsForm({ project, open, onOpenChange }: Props) {
+export default function NewProjectForm({ open, onOpenChange }: Props) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,23 +20,24 @@ export default function ProjectSettingsForm({ project, open, onOpenChange }: Pro
     setError(null);
 
     try {
-      const response = await fetch(`/api/projects/${project.id}`, {
-        method: 'PATCH',
+      const response = await fetch('/api/projects', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           ...data,
           startDate: new Date(data.startDate).toISOString(),
+          memberIds: [],
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update project');
+        throw new Error(errorData.error || 'Failed to create project');
       }
 
-      const updatedProject = await response.json();
+      const project = await response.json();
       router.refresh();
       onOpenChange(false);
     } catch (err) {
@@ -52,17 +51,16 @@ export default function ProjectSettingsForm({ project, open, onOpenChange }: Pro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Project Settings</DialogTitle>
+          <DialogTitle>Create New Project</DialogTitle>
           <DialogDescription>
-            Update your project settings below. Click save when you're done.
+            Fill in the project details below. Click create when you're done.
           </DialogDescription>
         </DialogHeader>
         
         <ProjectForm
-          initialData={project}
           onSubmit={handleSubmit}
           onCancel={() => onOpenChange(false)}
-          submitLabel="Save Changes"
+          submitLabel="Create Project"
           isSubmitting={isSaving}
           error={error}
         />

@@ -20,49 +20,60 @@ async function main() {
   const projects = await Promise.all([
     prisma.project.create({
       data: {
-        name: 'Project Alpha',
-        description: 'Our flagship mobile app development project',
-        startDate: new Date('2024-01-01'),
-        endDate: new Date('2024-06-30'),
-        sprintStartDay: 1, // Monday
+        name: "Project Alpha",
+        description: "Our flagship mobile app development project",
+        startDate: new Date("2024-01-01T00:00:00.000Z"),
+        sprintStartDay: 1,
         members: {
-          connect: users.slice(0, 5).map(user => ({ id: user.id })),
+          connect: [
+            { id: 6 },
+            { id: 5 },
+            { id: 4 },
+            { id: 7 },
+            { id: 1 }
+          ]
         },
       },
       include: {
-        members: true,
-      },
+        members: true
+      }
     }),
     prisma.project.create({
       data: {
-        name: 'Project Beta',
-        description: 'Web platform redesign initiative',
-        startDate: new Date('2024-03-01'),
-        endDate: new Date('2024-09-30'),
-        sprintStartDay: 3, // Wednesday
+        name: "Project Beta",
+        description: "Internal tooling improvements",
+        startDate: new Date("2024-02-01T00:00:00.000Z"),
+        sprintStartDay: 1,
         members: {
-          connect: users.slice(3, 8).map(user => ({ id: user.id })),
+          connect: [
+            { id: 2 },
+            { id: 3 },
+            { id: 4 }
+          ]
         },
       },
       include: {
-        members: true,
-      },
+        members: true
+      }
     }),
     prisma.project.create({
       data: {
-        name: 'Project Gamma',
-        description: 'Internal tools development',
-        startDate: new Date('2024-05-01'),
-        endDate: new Date('2024-12-31'),
-        sprintStartDay: 5, // Friday
+        name: "Project Gamma",
+        description: "Client website redesign",
+        startDate: new Date("2024-03-01T00:00:00.000Z"),
+        sprintStartDay: 1,
         members: {
-          connect: users.slice(6, 10).map(user => ({ id: user.id })),
+          connect: [
+            { id: 1 },
+            { id: 2 },
+            { id: 5 }
+          ]
         },
       },
       include: {
-        members: true,
-      },
-    }),
+        members: true
+      }
+    })
   ]);
 
   console.log('Seeded users:', users);

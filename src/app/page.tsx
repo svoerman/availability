@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { prisma } from '@/lib/db';
+import NewProjectButton from '@/components/NewProjectButton';
 
 export default async function Home() {
   const projects = await prisma.project.findMany({
@@ -15,7 +16,10 @@ export default async function Home() {
   return (
     <main className="min-h-screen p-8">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Projects</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Projects</h1>
+          <NewProjectButton />
+        </div>
         <div className="grid gap-6">
           {projects.map((project) => (
             <Link
@@ -31,11 +35,11 @@ export default async function Home() {
                   )}
                   <div className="text-sm text-gray-500 mb-4">
                     <div>
-                      Start: {format(new Date(project.startDate), 'MMM d, yyyy')}
+                      Start: {format(new Date(project.startDate), 'd MMM yyyy')}
                     </div>
                     {project.endDate && (
                       <div>
-                        End: {format(new Date(project.endDate), 'MMM d, yyyy')}
+                        End: {format(new Date(project.endDate), 'd MMM yyyy')}
                       </div>
                     )}
                   </div>

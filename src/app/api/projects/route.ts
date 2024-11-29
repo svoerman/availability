@@ -19,18 +19,19 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { name, description, startDate, endDate, memberIds, sprintStartDay } = await request.json();
+    const { name, description, startDate, memberIds = [], sprintStartDay } = await request.json();
 
     const project = await prisma.project.create({
       data: {
         name,
         description,
         startDate: new Date(startDate),
-        endDate: endDate ? new Date(endDate) : null,
         sprintStartDay: sprintStartDay || 1,
-        members: {
-          connect: memberIds.map((id: number) => ({ id })),
-        },
+        ...(memberIds.length > 0 && {
+          members: {
+            connect: memberIds.map((id: number) => ({ id })),
+          },
+        }),
       },
       include: {
         members: true,

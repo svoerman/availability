@@ -24,7 +24,6 @@ model Project {
   name        String
   description String?
   startDate   DateTime
-  endDate     DateTime?
   sprintStartDay Int    @default(1) // 1-7 representing Monday-Sunday
   members     User[]   @relation("ProjectMembers")
   createdAt   DateTime @default(now())

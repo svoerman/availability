@@ -17,11 +17,19 @@ type Availability = {
 };
 
 export default function AvailabilityGrid({ project }: Props) {
-  const [currentWeekStart, setCurrentWeekStart] = useState(() => startOfWeek(new Date()));
+  const [currentWeekStart, setCurrentWeekStart] = useState(() => {
+    // Try to get saved date from localStorage
+    const savedDate = localStorage.getItem(`project-${project.id}-weekStart`);
+    if (savedDate) {
+      const date = new Date(savedDate);
+      // Validate the date is valid
+      return isNaN(date.getTime()) ? startOfWeek(new Date()) : date;
+    }
+    return startOfWeek(new Date());
+  });
   const [availabilityData, setAvailabilityData] = useState<Availability[]>([]);
 
   const projectStartDate = new Date(project.startDate);
-  const projectEndDate = project.endDate ? new Date(project.endDate) : undefined;
   const projectMembers = project.members;
 
   // Generate dates for the next 2 weeks
@@ -29,10 +37,23 @@ export default function AvailabilityGrid({ project }: Props) {
     addDays(currentWeekStart, i)
   );
 
+  // Save current week start to localStorage whenever it changes
   useEffect(() => {
-    fetch('/api/availability')
-      .then((res) => res.json())
-      .then((data) => setAvailabilityData(data));
+    localStorage.setItem(`project-${project.id}-weekStart`, currentWeekStart.toISOString());
+  }, [currentWeekStart, project.id]);
+
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      try {
+        const res = await fetch('/api/availability');
+        if (!res.ok) throw new Error('Failed to fetch availability');
+        const data = await res.json();
+        setAvailabilityData(data);
+      } catch (error) {
+        console.error('Error fetching availability:', error);
+      }
+    };
+    fetchAvailability();
   }, []);
 
   const getAvailability = (userId: number, date: Date, dayPart: DayPart) => {
@@ -102,9 +123,9 @@ export default function AvailabilityGrid({ project }: Props) {
   };
 
   const isWithinProjectDates = (date: Date) => {
+    if (!projectStartDate) return false;
     const start = startOfWeek(projectStartDate);
-    const end = projectEndDate ? projectEndDate : addWeeks(start, 52); // Default to 1 year if no end date
-    return isWithinInterval(date, { start, end });
+    return date >= start;
   };
 
   const getStatusColor = (status: Status, date: Date) => {
@@ -114,15 +135,15 @@ export default function AvailabilityGrid({ project }: Props) {
 
     switch (status) {
       case 'FREE':
-        return 'bg-red-200 hover:bg-red-300';
+        return 'bg-red-200 hover:bg-red-300 cursor-pointer';
       case 'NOT_WORKING':
-        return 'bg-orange-200 hover:bg-orange-300';
+        return 'bg-orange-200 hover:bg-orange-300 cursor-pointer';
       case 'PARTIALLY_AVAILABLE':
-        return 'bg-yellow-200 hover:bg-yellow-300';
+        return 'bg-yellow-200 hover:bg-yellow-300 cursor-pointer';
       case 'WORKING':
-        return 'bg-green-200 hover:bg-green-300';
+        return 'bg-green-200 hover:bg-green-300 cursor-pointer';
       default:
-        return 'bg-gray-200 hover:bg-gray-300';
+        return 'bg-gray-200 hover:bg-gray-300 cursor-pointer';
     }
   };
 
@@ -134,6 +155,10 @@ export default function AvailabilityGrid({ project }: Props) {
     setCurrentWeekStart((prev) => addWeeks(prev, 2));
   };
 
+  const handleTodayPeriod = () => {
+    setCurrentWeekStart(startOfWeek(new Date()));
+  };
+
   return (
     <div className="overflow-x-auto">
       <div className="flex justify-between items-center mb-4">
@@ -143,15 +168,25 @@ export default function AvailabilityGrid({ project }: Props) {
         >
           ← Previous
         </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleTodayPeriod}
+            className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
+          >
+            Today
+          </button>
+          <button
+            onClick={handleNextPeriod}
+            className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
+          >
+            Next →
+          </button>
+        </div>
+      </div>
+      <div className="flex justify-center mb-4">
         <h2 className="text-lg font-semibold">
-          {format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 13), 'MMM d')}
+          {format(currentWeekStart, 'd MMM yyyy')} - {format(addDays(currentWeekStart, 13), 'd MMM yyyy')}
         </h2>
-        <button
-          onClick={handleNextPeriod}
-          className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
-        >
-          Next →
-        </button>
       </div>
       <div className="inline-block min-w-full">
         <div className="grid grid-cols-[auto_repeat(14,_minmax(80px,_1fr))]">
@@ -165,7 +200,7 @@ export default function AvailabilityGrid({ project }: Props) {
               }`}
             >
               <div>{format(date, 'EEE')}</div>
-              <div>{format(date, 'MMM d')}</div>
+              <div>{format(date, 'd MMM')}</div>
             </div>
           ))}
 
@@ -184,14 +219,16 @@ export default function AvailabilityGrid({ project }: Props) {
                 >
                   {(['MORNING', 'AFTERNOON'] as DayPart[]).map((dayPart) => {
                     const status = getAvailability(user.id, date, dayPart);
+                    const withinDates = isWithinProjectDates(date);
                     return (
                       <button
                         key={`${user.id}-${date.toString()}-${dayPart}`}
                         className={`${getStatusColor(
                           status as Status,
                           date
-                        )} h-8 transition-colors`}
+                        )} h-8 transition-colors ${withinDates ? 'cursor-pointer' : 'cursor-not-allowed'}`}
                         onClick={() =>
+                          withinDates &&
                           updateAvailability(
                             user.id,
                             date,
@@ -199,7 +236,8 @@ export default function AvailabilityGrid({ project }: Props) {
                             status as Status
                           )
                         }
-                        disabled={!isWithinProjectDates(date)}
+                        disabled={!withinDates}
+                        title={`${format(date, 'd MMM')} - ${dayPart.toLowerCase()}\nStatus: ${status.toLowerCase().replace(/_/g, ' ')}`}
                       />
                     );
                   })}

@@ -11,6 +11,12 @@ export async function PATCH(
     const id = Number(context.params.id);
     const body = await req.json();
     
+    if (!body.name?.trim()) {
+      return new Response(JSON.stringify({
+        error: 'Project name is required'
+      }), { status: 400 });
+    }
+
     const updated = await prisma.project.update({
       where: {
         id
@@ -18,8 +24,8 @@ export async function PATCH(
       data: {
         name: body.name,
         description: body.description,
+        startDate: new Date(body.startDate),
         sprintStartDay: body.sprintStartDay,
-        startDate: new Date(body.startDate)
       }
     });
     
