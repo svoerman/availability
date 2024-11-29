@@ -45,7 +45,7 @@ export default function AvailabilityGrid({ project }: Props) {
   useEffect(() => {
     const fetchAvailability = async () => {
       try {
-        const res = await fetch('/api/availability');
+        const res = await fetch(`/api/availability?projectId=${project.id}`);
         if (!res.ok) throw new Error('Failed to fetch availability');
         const data = await res.json();
         setAvailabilityData(data);
@@ -54,7 +54,7 @@ export default function AvailabilityGrid({ project }: Props) {
       }
     };
     fetchAvailability();
-  }, []);
+  }, [project.id]);
 
   const getAvailability = (userId: number, date: Date, dayPart: DayPart) => {
     return (
