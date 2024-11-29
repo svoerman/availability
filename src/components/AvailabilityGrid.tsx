@@ -16,6 +16,12 @@ type Availability = {
   status: Status;
 };
 
+type CellPosition = {
+  userId: number;
+  date: Date;
+  dayPart: DayPart;
+};
+
 export default function AvailabilityGrid({ project }: Props) {
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     // Try to get saved date from localStorage
@@ -28,6 +34,9 @@ export default function AvailabilityGrid({ project }: Props) {
     return startOfWeek(new Date());
   });
   const [availabilityData, setAvailabilityData] = useState<Availability[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [selectionStart, setSelectionStart] = useState<CellPosition | null>(null);
+  const [selectedCells, setSelectedCells] = useState<CellPosition[]>([]);
 
   const projectStartDate = new Date(project.startDate);
   const projectMembers = project.members;
@@ -76,22 +85,37 @@ export default function AvailabilityGrid({ project }: Props) {
     userId: number,
     date: Date,
     dayPart: DayPart,
-    currentStatus: Status
+    currentStatus: Status,
+    newStatus?: Status
   ) => {
     // Check if the date is within project dates
     if (!isWithinProjectDates(date)) {
       return;
     }
 
-    // Rotate through statuses
-    const statusOrder: Status[] = [
-      'FREE',
-      'NOT_WORKING',
-      'PARTIALLY_AVAILABLE',
-      'WORKING',
-    ];
-    const currentIndex = statusOrder.indexOf(currentStatus);
-    const newStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
+    // If newStatus is provided, use it. Otherwise, rotate through statuses
+    let statusToSet: Status;
+    if (newStatus) {
+      statusToSet = newStatus;
+    } else {
+      const statusOrder: Status[] = [
+        'FREE',
+        'NOT_WORKING',
+        'PARTIALLY_AVAILABLE',
+        'WORKING',
+      ];
+      const currentIndex = statusOrder.indexOf(currentStatus);
+      statusToSet = statusOrder[(currentIndex + 1) % statusOrder.length];
+    }
+
+    console.log('Updating availability:', {
+      userId,
+      date: format(date, 'yyyy-MM-dd'),
+      dayPart,
+      currentStatus,
+      newStatus,
+      statusToSet
+    });
 
     const response = await fetch('/api/availability', {
       method: 'POST',
@@ -102,7 +126,7 @@ export default function AvailabilityGrid({ project }: Props) {
         userId,
         date: format(date, 'yyyy-MM-dd'),
         dayPart,
-        status: newStatus,
+        status: statusToSet,
       }),
     });
 
@@ -124,7 +148,9 @@ export default function AvailabilityGrid({ project }: Props) {
         }
         return [...prev, updatedAvailability];
       });
+      return updatedAvailability;
     }
+    return null;
   };
 
   const isWithinProjectDates = (date: Date) => {
@@ -162,6 +188,96 @@ export default function AvailabilityGrid({ project }: Props) {
 
   const handleTodayPeriod = () => {
     setCurrentWeekStart(startOfWeek(new Date()));
+  };
+
+  const handleMouseDown = (userId: number, date: Date, dayPart: DayPart) => {
+    if (!isWithinProjectDates(date)) return;
+    
+    const position = { userId, date, dayPart };
+    setIsDragging(true);
+    setSelectionStart(position);
+    setSelectedCells([position]);
+  };
+
+  const handleMouseEnter = (userId: number, date: Date, dayPart: DayPart) => {
+    if (!isDragging || !selectionStart || !isWithinProjectDates(date)) return;
+
+    const position = { userId, date, dayPart };
+    const startDate = selectionStart.date;
+    const endDate = date;
+
+    // Get all dates between start and end
+    const dates = [];
+    let currentDate = new Date(Math.min(startDate.getTime(), endDate.getTime()));
+    const lastDate = new Date(Math.max(startDate.getTime(), endDate.getTime()));
+
+    while (currentDate <= lastDate) {
+      dates.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Create selection for all cells between start and current position
+    const newSelection = dates.flatMap(date => {
+      if (userId === selectionStart.userId) {
+        return ['MORNING', 'AFTERNOON'].map(dayPart => ({
+          userId,
+          date: new Date(date),
+          dayPart: dayPart as DayPart,
+        }));
+      }
+      return [];
+    });
+
+    setSelectedCells(newSelection);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, []);
+
+  const updateSelectedCells = async (newStatus: Status) => {
+    console.log('Updating selected cells to:', newStatus);
+    console.log('Selected cells:', selectedCells);
+
+    const promises = selectedCells.map(cell => {
+      const currentStatus = getAvailability(cell.userId, cell.date, cell.dayPart);
+      console.log('Cell current status:', {
+        userId: cell.userId,
+        date: format(cell.date, 'yyyy-MM-dd'),
+        dayPart: cell.dayPart,
+        currentStatus
+      });
+      
+      return updateAvailability(
+        cell.userId,
+        cell.date,
+        cell.dayPart,
+        currentStatus as Status,
+        newStatus
+      );
+    });
+    
+    const results = await Promise.all(promises);
+    console.log('Update results:', results);
+    setSelectedCells([]);
+  };
+
+  const isCellSelected = (userId: number, date: Date, dayPart: DayPart) => {
+    return selectedCells.some(
+      cell =>
+        cell.userId === userId &&
+        cell.date.getTime() === date.getTime() &&
+        cell.dayPart === dayPart
+    );
   };
 
   return (
@@ -225,15 +341,22 @@ export default function AvailabilityGrid({ project }: Props) {
                   {(['MORNING', 'AFTERNOON'] as DayPart[]).map((dayPart) => {
                     const status = getAvailability(user.id, date, dayPart);
                     const withinDates = isWithinProjectDates(date);
+                    const isSelected = isCellSelected(user.id, date, dayPart);
                     return (
                       <button
                         key={`${user.id}-${date.toString()}-${dayPart}`}
                         className={`${getStatusColor(
                           status as Status,
                           date
-                        )} flex-1 h-16 transition-colors ${withinDates ? 'cursor-pointer' : 'cursor-not-allowed'}`}
-                        onClick={() =>
-                          withinDates &&
+                        )} flex-1 h-16 transition-colors ${
+                          withinDates ? 'cursor-pointer' : 'cursor-not-allowed'
+                        } ${isSelected ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
+                        onMouseDown={() => handleMouseDown(user.id, date, dayPart)}
+                        onMouseEnter={() => handleMouseEnter(user.id, date, dayPart)}
+                        onMouseUp={handleMouseUp}
+                        onClick={() => 
+                          withinDates && 
+                          !isDragging && 
                           updateAvailability(
                             user.id,
                             date,
@@ -252,23 +375,55 @@ export default function AvailabilityGrid({ project }: Props) {
           ))}
         </div>
       </div>
-      <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-400"></div>
-          <span className="text-sm">Free</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-orange-400"></div>
-          <span className="text-sm">Not Working</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-yellow-400"></div>
-          <span className="text-sm">Partially Available</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-green-400"></div>
-          <span className="text-sm">Working</span>
-        </div>
+      <div className="mt-4 flex gap-2 flex-wrap justify-center">
+        <button
+          onClick={() => updateSelectedCells('WORKING')}
+          disabled={selectedCells.length === 0}
+          className={`px-4 py-2 rounded flex items-center gap-2 ${
+            selectedCells.length === 0
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-green-400 hover:bg-green-500 text-white'
+          }`}
+        >
+          <div className="w-4 h-4 bg-green-500 rounded"></div>
+          Working
+        </button>
+        <button
+          onClick={() => updateSelectedCells('PARTIALLY_AVAILABLE')}
+          disabled={selectedCells.length === 0}
+          className={`px-4 py-2 rounded flex items-center gap-2 ${
+            selectedCells.length === 0
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-yellow-400 hover:bg-yellow-500 text-white'
+          }`}
+        >
+          <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+          Partially Available
+        </button>
+        <button
+          onClick={() => updateSelectedCells('NOT_WORKING')}
+          disabled={selectedCells.length === 0}
+          className={`px-4 py-2 rounded flex items-center gap-2 ${
+            selectedCells.length === 0
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-orange-400 hover:bg-orange-500 text-white'
+          }`}
+        >
+          <div className="w-4 h-4 bg-orange-500 rounded"></div>
+          Other assignments
+        </button>
+        <button
+          onClick={() => updateSelectedCells('FREE')}
+          disabled={selectedCells.length === 0}
+          className={`px-4 py-2 rounded flex items-center gap-2 ${
+            selectedCells.length === 0
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-red-400 hover:bg-red-500 text-white'
+          }`}
+        >
+          <div className="w-4 h-4 bg-red-500 rounded"></div>
+          Free
+        </button>
       </div>
     </div>
   );
