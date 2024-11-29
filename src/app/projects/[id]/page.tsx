@@ -103,7 +103,7 @@ export default async function ProjectPage({
       <div className="container mx-auto py-6">
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <Link href="/">
+            <Link href="/projects">
               <Button variant="outline" size="sm">
                 ← Back
               </Button>
