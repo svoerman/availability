@@ -4,16 +4,16 @@ const prisma = new PrismaClient();
 async function main() {
   // Create users
   const users = await Promise.all([
-    prisma.user.create({ data: { name: 'Rob' } }),
-    prisma.user.create({ data: { name: 'Martijn' } }),
-    prisma.user.create({ data: { name: 'Jordy' } }),
-    prisma.user.create({ data: { name: 'Max' } }),
-    prisma.user.create({ data: { name: 'Ivo' } }),
-    prisma.user.create({ data: { name: 'Sjors' } }),
-    prisma.user.create({ data: { name: 'Paul' } }),
-    prisma.user.create({ data: { name: 'Derek' } }),
-    prisma.user.create({ data: { name: 'Naam 9' } }),
-    prisma.user.create({ data: { name: 'Naam 10' } }),
+    prisma.user.create({ data: { name: 'Rob', email: 'rob@example.com' } }),
+    prisma.user.create({ data: { name: 'Martijn', email: 'martijn@example.com' } }),
+    prisma.user.create({ data: { name: 'Jordy', email: 'jordy@example.com' } }),
+    prisma.user.create({ data: { name: 'Max', email: 'max@example.com' } }),
+    prisma.user.create({ data: { name: 'Ivo', email: 'ivo@example.com' } }),
+    prisma.user.create({ data: { name: 'Sjors', email: 'sjors@example.com' } }),
+    prisma.user.create({ data: { name: 'Paul', email: 'paul@example.com' } }),
+    prisma.user.create({ data: { name: 'Derek', email: 'derek@example.com' } }),
+    prisma.user.create({ data: { name: 'Naam 9', email: 'naam9@example.com' } }),
+    prisma.user.create({ data: { name: 'Naam 10', email: 'naam10@example.com' } }),
   ]);
 
   // Create projects and assign users

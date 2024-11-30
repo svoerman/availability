@@ -1,19 +1,36 @@
-import Link from 'next/link';
+import { auth } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 
-export default function Home() {
+export default async function Home() {
+  const session = await auth();
+  
+  // Redirect to projects if logged in
+  if (session) {
+    redirect("/projects");
+  }
+
   return (
-    <main className="min-h-screen flex items-center justify-center p-8">
-      <div className="max-w-md w-full">
-        <h1 className="text-3xl font-bold text-center mb-8">Welcome to Availability</h1>
-        <div className="text-center">
-          <Link
-            href="/projects"
-            className="inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            View Projects
+    <div className="flex flex-col items-center justify-center min-h-screen py-2">
+      <main className="flex flex-col items-center justify-center w-full flex-1 px-20 text-center">
+        <h1 className="text-6xl font-bold">
+          Welcome to <span className="text-blue-600">Availability</span>
+        </h1>
+        
+        <p className="mt-3 text-2xl">
+          Manage your projects and team availability with ease
+        </p>
+
+        <div className="flex flex-wrap items-center justify-around max-w-4xl mt-6 sm:w-full">
+          <Link href="/register">
+            <Button size="lg">Get Started</Button>
+          </Link>
+          <Link href="/login">
+            <Button variant="outline" size="lg">Sign In</Button>
           </Link>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

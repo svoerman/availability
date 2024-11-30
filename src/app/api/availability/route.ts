@@ -1,5 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { Status, DayPart } from '@prisma/client';
+
+const isValidStatus = (status: any): status is Status => {
+  return ['FREE', 'NOT_WORKING', 'PARTIALLY_AVAILABLE', 'WORKING'].includes(status);
+};
+
+const isValidDayPart = (dayPart: any): dayPart is DayPart => {
+  return ['MORNING', 'AFTERNOON', 'EVENING'].includes(dayPart);
+};
 
 export async function GET(request: Request) {
   try {
@@ -55,10 +64,43 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const { userId, date, dayPart, status } = await request.json();
+
+    // Validate input
+    if (!userId || !date || !dayPart || status === undefined) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    // Validate status and dayPart
+    if (!isValidStatus(status)) {
+      return NextResponse.json(
+        { error: 'Invalid status value' },
+        { status: 400 }
+      );
+    }
+
+    if (!isValidDayPart(dayPart)) {
+      return NextResponse.json(
+        { error: 'Invalid dayPart value' },
+        { status: 400 }
+      );
+    }
+
+    // Validate userId is a number
+    const userIdNum = Number(userId);
+    if (isNaN(userIdNum)) {
+      return NextResponse.json(
+        { error: 'Invalid userId' },
+        { status: 400 }
+      );
+    }
+
     const availability = await prisma.availability.upsert({
       where: {
         userId_date_dayPart: {
-          userId,
+          userId: userIdNum,
           date: new Date(date),
           dayPart,
         },
@@ -67,12 +109,13 @@ export async function POST(request: Request) {
         status,
       },
       create: {
-        userId,
+        userId: userIdNum,
         date: new Date(date),
         dayPart,
         status,
       },
     });
+
     return NextResponse.json(availability);
   } catch (error) {
     console.error('Error updating availability:', error);

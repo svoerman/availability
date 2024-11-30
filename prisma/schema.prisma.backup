@@ -1,0 +1,56 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int            @id @default(autoincrement())
+  name         String
+  availability Availability[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  projects     Project[]      @relation("ProjectMembers")
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  startDate   DateTime
+  sprintStartDay Int    @default(1) // 1-7 representing Monday-Sunday
+  members     User[]   @relation("ProjectMembers")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Availability {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  date      DateTime
+  dayPart   DayPart
+  status    Status
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date, dayPart])
+}
+
+enum DayPart {
+  MORNING
+  AFTERNOON
+}
+
+enum Status {
+  FREE
+  NOT_WORKING
+  PARTIALLY_AVAILABLE
+  WORKING
+}
