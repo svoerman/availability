@@ -298,6 +298,28 @@ export default function AvailabilityGrid({ project }: Props) {
     return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
   }, []);
 
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      // Only handle key events when there are selected cells
+      if (selectedCells.length === 0) return;
+
+      const statusMap: Record<string, Status> = {
+        '1': 'WORKING',
+        '2': 'PARTIALLY_AVAILABLE',
+        '3': 'NOT_WORKING',
+        '4': 'FREE'
+      };
+
+      const newStatus = statusMap[event.key];
+      if (newStatus) {
+        updateSelectedCells(newStatus);
+      }
+    };
+
+    window.addEventListener('keypress', handleKeyPress);
+    return () => window.removeEventListener('keypress', handleKeyPress);
+  }, [selectedCells]);
+
   const updateSelectedCells = async (newStatus: Status) => {
     console.log('Updating selected cells to:', newStatus);
     console.log('Selected cells:', selectedCells);
@@ -440,7 +462,7 @@ export default function AvailabilityGrid({ project }: Props) {
           }`}
         >
           <div className="w-4 h-4 bg-green-500 rounded"></div>
-          Working
+          Working (1)
         </button>
         <button
           onClick={() => updateSelectedCells('PARTIALLY_AVAILABLE')}
@@ -452,7 +474,7 @@ export default function AvailabilityGrid({ project }: Props) {
           }`}
         >
           <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-          Partially Available
+          Partially Available (2)
         </button>
         <button
           onClick={() => updateSelectedCells('NOT_WORKING')}
@@ -464,7 +486,7 @@ export default function AvailabilityGrid({ project }: Props) {
           }`}
         >
           <div className="w-4 h-4 bg-orange-500 rounded"></div>
-          Other assignments
+          Other assignments (3)
         </button>
         <button
           onClick={() => updateSelectedCells('FREE')}
@@ -476,7 +498,7 @@ export default function AvailabilityGrid({ project }: Props) {
           }`}
         >
           <div className="w-4 h-4 bg-red-500 rounded"></div>
-          Free
+          Free (4)
         </button>
       </div>
     </div>
