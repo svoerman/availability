@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { Status, DayPart } from '@prisma/client';
 
-const isValidStatus = (status: any): status is Status => {
-  return ['FREE', 'NOT_WORKING', 'PARTIALLY_AVAILABLE', 'WORKING'].includes(status);
+const isValidStatus = (status: unknown): status is Status => {
+  return ['FREE', 'NOT_WORKING', 'PARTIALLY_AVAILABLE', 'WORKING'].includes(status as string);
 };
 
-const isValidDayPart = (dayPart: any): dayPart is DayPart => {
-  return ['MORNING', 'AFTERNOON', 'EVENING'].includes(dayPart);
+const isValidDayPart = (dayPart: unknown): dayPart is DayPart => {
+  return ['MORNING', 'AFTERNOON', 'EVENING'].includes(dayPart as string);
 };
 
 export async function GET(request: Request) {
