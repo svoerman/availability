@@ -51,9 +51,17 @@ async function main() {
             { id: 1 }
           ]
         },
+        sprints: {
+          create: [
+            { startDate: new Date("2024-01-01T00:00:00.000Z") },
+            { startDate: new Date("2024-01-15T00:00:00.000Z") },
+            { startDate: new Date("2024-01-29T00:00:00.000Z") },
+          ]
+        }
       },
       include: {
-        members: true
+        members: true,
+        sprints: true
       }
     }),
     prisma.project.create({
@@ -70,9 +78,16 @@ async function main() {
             { id: 4 }
           ]
         },
+        sprints: {
+          create: [
+            { startDate: new Date("2024-02-01T00:00:00.000Z") },
+            { startDate: new Date("2024-02-15T00:00:00.000Z") },
+          ]
+        }
       },
       include: {
-        members: true
+        members: true,
+        sprints: true
       }
     }),
     prisma.project.create({
@@ -89,9 +104,16 @@ async function main() {
             { id: 5 }
           ]
         },
+        sprints: {
+          create: [
+            { startDate: new Date("2024-03-01T00:00:00.000Z") },
+            { startDate: new Date("2024-03-15T00:00:00.000Z") },
+          ]
+        }
       },
       include: {
-        members: true
+        members: true,
+        sprints: true
       }
     })
   ]);

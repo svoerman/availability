@@ -7,10 +7,11 @@ import TeamMembersButton from './TeamMembersButton';
 import { Metadata, ResolvingMetadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Calendar, Users, Pencil } from 'lucide-react';
 
 interface Props {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  params: { id: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 }
 
 async function getProjectData(projectId: number) {
@@ -68,12 +69,10 @@ export async function generateMetadata(
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   try {
-    const resolvedParams = await params;
-    const resolvedSearchParams = await searchParams;
-    const id = Number(resolvedParams.id);
+    const id = Number(params.id);
     
     if (isNaN(id)) {
-      console.error('Invalid project ID in metadata:', resolvedParams.id);
+      console.error('Invalid project ID in metadata:', params.id);
       return {
         title: 'Project Not Found',
         description: 'The requested project could not be found',
@@ -120,11 +119,10 @@ export default async function ProjectPage({ params, searchParams }: Props) {
   }
 
   try {
-    const resolvedParams = await params;
-    const id = Number(resolvedParams.id);
+    const id = Number(params.id);
     
     if (isNaN(id)) {
-      console.error('Invalid project ID in URL:', resolvedParams.id);
+      console.error('Invalid project ID in URL:', params.id);
       notFound();
     }
 
@@ -143,20 +141,21 @@ export default async function ProjectPage({ params, searchParams }: Props) {
     return (
       <div className="container mx-auto py-6">
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <Link href={project.organizationId ? `/projects?org=${project.organizationId}` : "/projects"}>
-              <Button variant="outline" size="sm">
-                ← Back
-              </Button>
-            </Link>
-            <div className="flex gap-2">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold">{project.name}</h1>
+            <div className="space-x-4">
+              <Link href={`/projects/${project.id}/sprints`}>
+                <Button variant="outline">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Sprints
+                </Button>
+              </Link>
               <TeamMembersButton project={project} />
               <ProjectSettingsButton project={project} />
             </div>
           </div>
 
           <div>
-            <h1 className="text-2xl font-bold">{project.name}</h1>
             {project.description && (
               <p className="mt-2 text-gray-600">{project.description}</p>
             )}

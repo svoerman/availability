@@ -35,6 +35,7 @@ model Project {
   members        User[]        @relation("ProjectMembers")
   organization   Organization? @relation(fields: [organizationId], references: [id])
   organizationId Int?
+  sprints        Sprint[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 }
@@ -109,6 +110,17 @@ model OrganizationMember {
   updatedAt      DateTime     @updatedAt
 
   @@unique([organizationId, userId])
+}
+
+model Sprint {
+  id        Int      @id @default(autoincrement())
+  startDate DateTime
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, startDate])
 }
 
 enum DayPart {
