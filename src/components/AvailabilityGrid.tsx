@@ -344,7 +344,49 @@ export default function AvailabilityGrid({ project }: Props) {
     
     const results = await Promise.all(promises);
     console.log('Update results:', results);
-    setSelectedCells([]);
+
+    // Only proceed with selecting next cell if exactly one cell was selected
+    if (selectedCells.length === 1) {
+      const currentCell = selectedCells[0];
+      let nextDate = new Date(currentCell.date);
+      let nextDayPart: DayPart = currentCell.dayPart;
+
+      // Function to check if date is a weekend
+      const isWeekend = (date: Date) => {
+        const day = date.getDay();
+        return day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
+      };
+
+      // If current dayPart is MORNING, select AFTERNOON of the same day
+      if (nextDayPart === 'MORNING') {
+        nextDayPart = 'AFTERNOON';
+      } 
+      // If current dayPart is AFTERNOON, move to next day's MORNING
+      else {
+        nextDate = addDays(nextDate, 1);
+        nextDayPart = 'MORNING';
+        
+        // Skip weekend days
+        while (isWeekend(nextDate)) {
+          nextDate = addDays(nextDate, 1);
+        }
+      }
+
+      // Only select next cell if it's within project dates and not a weekend
+      if (isWithinProjectDates(nextDate) && !isWeekend(nextDate)) {
+        setSelectedCells([{
+          userId: currentCell.userId,
+          date: nextDate,
+          dayPart: nextDayPart,
+        }]);
+      } else {
+        // Clear selection if we've reached the end or hit a weekend
+        setSelectedCells([]);
+      }
+    } else {
+      // Clear selection if multiple cells were selected
+      setSelectedCells([]);
+    }
   };
 
   const isCellSelected = (userId: number, date: Date, dayPart: DayPart) => {
