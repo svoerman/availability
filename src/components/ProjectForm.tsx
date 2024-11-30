@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Project } from '@prisma/client';
@@ -56,8 +55,8 @@ export default function ProjectForm({
       : new Date().toISOString().split('T')[0]
   );
   const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [organizationId, setOrganizationId] = useState<number | undefined>(
-    initialData?.organizationId
+  const [organizationId, setOrganizationId] = useState<number>(
+    initialData?.organizationId || 0
   );
   const [isLoading, setIsLoading] = useState(true);
 
@@ -68,7 +67,8 @@ export default function ProjectForm({
         if (!response.ok) throw new Error('Failed to fetch organizations');
         const data = await response.json();
         setOrganizations(data);
-        if (data.length === 1) {
+        // Set organizationId if it's not already set (new project) or if there's only one org
+        if (!organizationId || data.length === 1) {
           setOrganizationId(data[0].id);
         }
       } catch (error) {
@@ -79,7 +79,7 @@ export default function ProjectForm({
     };
 
     fetchOrganizations();
-  }, []);
+  }, [organizationId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,40 +116,46 @@ export default function ProjectForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label htmlFor="organization" className="block text-sm font-medium text-gray-700">
-          Organization
-        </label>
-        <Select
-          value={organizationId?.toString()}
-          onValueChange={(value) => setOrganizationId(Number(value))}
-          required
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select an organization" />
-          </SelectTrigger>
-          <SelectContent>
-            {organizations.map((org) => (
-              <SelectItem key={org.id} value={org.id.toString()}>
-                {org.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Only show organization selection for new projects with multiple organizations */}
+      {!initialData && organizations.length > 1 ? (
+        <div>
+          <label htmlFor="organization" className="block text-sm font-medium text-gray-700">
+            Organization
+          </label>
+          <Select
+            value={organizationId.toString()}
+            onValueChange={(value) => setOrganizationId(Number(value))}
+            required
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select an organization" />
+            </SelectTrigger>
+            <SelectContent>
+              {organizations.map((org) => (
+                <SelectItem key={org.id} value={org.id.toString()}>
+                  {org.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
 
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700">
           Project Name
         </label>
-        <Input
-          type="text"
-          id="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="mt-1"
-          required
-        />
+        <div className="relative">
+          <input
+            type="text"
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="mt-1 block w-full rounded-md border border-input bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:bg-indigo-100 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            required
+            autoComplete="off"
+          />
+        </div>
       </div>
 
       <div>
@@ -169,12 +175,12 @@ export default function ProjectForm({
         <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
           Start Date
         </label>
-        <Input
+        <input
           type="date"
           id="startDate"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
-          className="mt-1"
+          className="mt-1 block w-full rounded-md border border-input bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:bg-indigo-100 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           required
         />
       </div>

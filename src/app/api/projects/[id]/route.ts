@@ -4,10 +4,16 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 export const dynamic = 'force-dynamic';
 
-export async function PATCH(req: NextRequest) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { searchParams } = new URL(req.url);
-    const id = Number(searchParams.get('id'));
+    const id = Number(params.id);
+    if (isNaN(id)) {
+      return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
+    }
+
     const body = await req.json();
     
     if (!body.name?.trim()) {
@@ -23,6 +29,7 @@ export async function PATCH(req: NextRequest) {
         description: body.description,
         startDate: new Date(body.startDate),
         sprintStartDay: body.sprintStartDay,
+        organizationId: body.organizationId
       }
     });
     

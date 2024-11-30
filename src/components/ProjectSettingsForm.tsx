@@ -30,6 +30,7 @@ export default function ProjectSettingsForm({ project, open, onOpenChange }: Pro
         body: JSON.stringify({
           ...data,
           startDate: new Date(data.startDate).toISOString(),
+          organizationId: Number(data.organizationId)
         }),
       });
 
