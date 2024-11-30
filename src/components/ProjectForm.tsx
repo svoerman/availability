@@ -1,15 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Project } from '@prisma/client';
-
-interface Organization {
-  id: number;
-  name: string;
-}
+import { FormField, inputClassName } from '@/components/ui/form-field';
+import { useOrganizations } from '@/hooks/useOrganizations';
 
 export const DAYS_OF_WEEK = [
   { value: 1, label: 'Monday' },
@@ -54,32 +51,10 @@ export default function ProjectForm({
       ? new Date(initialData.startDate).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0]
   );
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [organizationId, setOrganizationId] = useState<number>(
-    initialData?.organizationId || 0
+  
+  const { organizations, organizationId, setOrganizationId, isLoading } = useOrganizations(
+    initialData?.organizationId
   );
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchOrganizations = async () => {
-      try {
-        const response = await fetch('/api/organizations');
-        if (!response.ok) throw new Error('Failed to fetch organizations');
-        const data = await response.json();
-        setOrganizations(data);
-        // Set organizationId if it's not already set (new project) or if there's only one org
-        if (!organizationId || data.length === 1) {
-          setOrganizationId(data[0].id);
-        }
-      } catch (error) {
-        console.error('Failed to fetch organizations:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchOrganizations();
-  }, [organizationId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,11 +92,8 @@ export default function ProjectForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Only show organization selection for new projects with multiple organizations */}
-      {!initialData && organizations.length > 1 ? (
-        <div>
-          <label htmlFor="organization" className="block text-sm font-medium text-gray-700">
-            Organization
-          </label>
+      {!initialData && organizations.length > 1 && (
+        <FormField id="organization" label="Organization">
           <Select
             value={organizationId.toString()}
             onValueChange={(value) => setOrganizationId(Number(value))}
@@ -138,62 +110,47 @@ export default function ProjectForm({
               ))}
             </SelectContent>
           </Select>
-        </div>
-      ) : null}
+        </FormField>
+      )}
 
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-          Project Name
-        </label>
-        <div className="relative">
-          <input
-            type="text"
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-input bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:bg-indigo-100 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-            required
-            autoComplete="off"
-          />
-        </div>
-      </div>
+      <FormField id="name" label="Project Name">
+        <input
+          type="text"
+          id="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className={inputClassName}
+          required
+          autoComplete="off"
+        />
+      </FormField>
 
-      <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-          Description
-        </label>
+      <FormField id="description" label="Description">
         <Textarea
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="mt-1"
         />
-      </div>
+      </FormField>
 
-      <div>
-        <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
-          Start Date
-        </label>
+      <FormField id="startDate" label="Start Date">
         <input
           type="date"
           id="startDate"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-input bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:bg-indigo-100 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+          className={inputClassName}
           required
         />
-      </div>
+      </FormField>
 
-      <div>
-        <label htmlFor="sprintStartDay" className="block text-sm font-medium text-gray-700">
-          Sprint Start Day
-        </label>
+      <FormField id="sprintStartDay" label="Sprint Start Day">
         <select
           id="sprintStartDay"
           value={sprintStartDay}
           onChange={(e) => setSprintStartDay(Number(e.target.value))}
-          className="mt-1 block w-full rounded-md border border-input bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:bg-indigo-100 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+          className={inputClassName}
           required
         >
           {DAYS_OF_WEEK.map((day) => (
@@ -202,23 +159,16 @@ export default function ProjectForm({
             </option>
           ))}
         </select>
-      </div>
+      </FormField>
 
       {error && (
         <div className="rounded-md bg-red-50 p-4">
-          <div className="flex">
-            <div className="text-sm text-red-700">{error}</div>
-          </div>
+          <div className="text-sm text-red-700">{error}</div>
         </div>
       )}
 
-      <div className="flex justify-end space-x-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={isSubmitting}
-        >
+      <div className="flex justify-end space-x-4">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting}>

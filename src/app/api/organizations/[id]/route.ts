@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 export async function GET(
-  request: Request,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -20,6 +20,19 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Verify the user is a member of the organization
+    const isMember = await prisma.organizationMember.findFirst({
+      where: {
+        userId: user.id,
+        organizationId: parseInt(params.id),
+      },
+    });
+
+    if (!isMember) {
+      return NextResponse.json({ error: 'Not a member of this organization' }, { status: 403 });
+    }
+
+    // Fetch the organization
     const organization = await prisma.organization.findFirst({
       where: {
         id: parseInt(params.id),
@@ -29,9 +42,18 @@ export async function GET(
           }
         }
       },
-      select: {
-        id: true,
-        name: true,
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        }
       }
     });
 
@@ -43,7 +65,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching organization:', error);
     return NextResponse.json(
-      { error: 'Error fetching organization' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

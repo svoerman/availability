@@ -1,28 +1,34 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { FormDialog } from '@/components/ui/form-dialog';
 import { Button } from '@/components/ui/button';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useFormSubmit } from '@/hooks/useFormSubmit';
 
 interface Props {
-  project: { id: number; name: string; organizationId: number; members: { id: number; name: string; email: string }[] };
+  project: {
+    id: number;
+    name: string;
+    organizationId: number;
+    members: { id: number; name: string; email: string }[];
+  };
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 export default function TeamMembersForm({ project, open, onOpenChange }: Props) {
-  const router = useRouter();
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [availableUsers, setAvailableUsers] = useState<{ id: number; name: string; email: string }[]>([]);
   const [openCombobox, setOpenCombobox] = useState(false);
+
+  const { submit, isSubmitting, error, success, setError } = useFormSubmit({
+    successMessage: 'Team member added successfully!'
+  });
 
   // Fetch organization users
   useEffect(() => {
@@ -39,7 +45,7 @@ export default function TeamMembersForm({ project, open, onOpenChange }: Props) 
         
         // Filter out users that are already members of the project
         const filteredUsers = users.filter(
-          (user: { id: number; name: string; email: string }) => !project.members.some((member: { id: number; name: string; email: string }) => member.id === user.id)
+          (user: { id: number }) => !project.members.some((member) => member.id === user.id)
         );
         setAvailableUsers(filteredUsers);
         setError(null);
@@ -52,165 +58,120 @@ export default function TeamMembersForm({ project, open, onOpenChange }: Props) 
     if (open) {
       fetchUsers();
     }
-  }, [project.organizationId, project.members, open]);
+  }, [project.organizationId, project.members, open, setError]);
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUserId) return;
 
-    setIsSaving(true);
-    setError(null);
+    await submit(`/api/projects/${project.id}/members`, {
+      data: { userId: parseInt(selectedUserId, 10) }
+    });
 
-    try {
-      const response = await fetch(`/api/projects/${project.id}/members`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: parseInt(selectedUserId, 10) }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to add team member');
-      }
-
-      setSelectedUserId(null);
-      setSearchTerm('');
-      setOpenCombobox(false);
-      router.refresh();
-    } catch (err) {
-      console.error('Error adding team member:', err);
-      setError(err instanceof Error ? err.message : 'Failed to add team member');
-    } finally {
-      setIsSaving(false);
-    }
+    setSelectedUserId(null);
+    setSearchTerm('');
+    setOpenCombobox(false);
   };
 
   const handleRemoveMember = async (memberId: number) => {
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/projects/${project.id}/members?userId=${memberId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage;
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.error;
-        } catch {
-          errorMessage = 'Failed to remove team member';
-        }
-        throw new Error(errorMessage);
-      }
-
-      router.refresh();
-    } catch (err) {
-      console.error('Error removing team member:', err);
-      setError(err instanceof Error ? err.message : 'Failed to remove team member');
-    } finally {
-      setIsSaving(false);
-    }
+    await submit(`/api/projects/${project.id}/members?userId=${memberId}`, {
+      method: 'DELETE',
+      data: {},
+      successMessage: 'Team member removed successfully!'
+    });
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Team Members</DialogTitle>
-          <DialogDescription>
-            Add or remove team members for {project.name}
-          </DialogDescription>
-        </DialogHeader>
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Team Members"
+      description="Add or remove team members from your project."
+      maxWidth="600px"
+    >
+      <div className="space-y-4">
+        {error && (
+          <div className="text-sm text-red-500">{error}</div>
+        )}
+        {success && (
+          <div className="text-sm text-green-500">{success}</div>
+        )}
+        <form onSubmit={handleAddMember} className="space-y-4">
+          <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={openCombobox}
+                className="w-full justify-between"
+              >
+                {selectedUserId
+                  ? availableUsers.find((user) => user.id.toString() === selectedUserId)?.name
+                  : "Select a user..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0">
+              <Command>
+                <CommandInput
+                  placeholder="Search users..."
+                  value={searchTerm}
+                  onValueChange={setSearchTerm}
+                />
+                <CommandList>
+                  <CommandEmpty>No users found.</CommandEmpty>
+                  <CommandGroup>
+                    {availableUsers.map((user) => (
+                      <CommandItem
+                        key={user.id}
+                        value={user.id.toString()}
+                        onSelect={(value) => {
+                          setSelectedUserId(value === selectedUserId ? null : value);
+                          setOpenCombobox(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedUserId === user.id.toString() ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {user.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
 
-        <div className="space-y-4">
-          <form onSubmit={handleAddMember} className="flex gap-2">
-            <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={openCombobox}
-                  className={cn(
-                    "w-[200px] justify-between",
-                    !selectedUserId && "text-muted-foreground"
-                  )}
-                >
-                  {selectedUserId
-                    ? availableUsers.find((user) => user.id === parseInt(selectedUserId, 10))?.name
-                    : "Select user..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                <Command className="flex flex-col">
-                  <CommandInput 
-                    placeholder="Search users..." 
-                    value={searchTerm}
-                    onValueChange={setSearchTerm}
-                  />
-                  <div className="flex-1 overflow-hidden">
-                    <CommandList className="h-[200px] overflow-y-auto">
-                      <CommandEmpty>No users found</CommandEmpty>
-                      <CommandGroup>
-                        {availableUsers
-                          .filter(user => {
-                            if (!searchTerm) return true;
-                            const searchLower = searchTerm.toLowerCase();
-                            return (
-                              (user.name?.toLowerCase() || '').includes(searchLower) ||
-                              user.email.toLowerCase().includes(searchLower)
-                            );
-                          })
-                          .map(user => (
-                            <CommandItem
-                              key={user.id}
-                              value={user.name || user.email}
-                              onSelect={() => {
-                                setSelectedUserId(user.id.toString());
-                                setOpenCombobox(false);
-                              }}
-                              className="flex items-center justify-between"
-                            >
-                              <div className="flex flex-col">
-                                <span className="font-medium">{user.name}</span>
-                                <span className="text-xs text-muted-foreground">{user.email}</span>
-                              </div>
-                              {selectedUserId === user.id.toString() && (
-                                <Check className="ml-2 h-4 w-4 shrink-0" />
-                              )}
-                            </CommandItem>
-                          ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </div>
-                </Command>
-              </PopoverContent>
-            </Popover>
-            <Button type="submit" disabled={isSaving || !selectedUserId}>
-              Add
-            </Button>
-          </form>
+          <Button
+            type="submit"
+            disabled={!selectedUserId || isSubmitting}
+            className="w-full"
+          >
+            {isSubmitting ? "Adding..." : "Add Member"}
+          </Button>
+        </form>
 
-          {error && (
-            <div className="text-red-500 text-sm">{error}</div>
-          )}
-
+        <div className="mt-6">
+          <h4 className="text-sm font-medium text-gray-900 mb-4">Current Members</h4>
           <div className="space-y-2">
-            {project.members.map((member: { id: number; name: string; email: string }) => (
-              <div key={member.id} className="flex items-center justify-between p-2 border rounded">
-                <div className="flex flex-col">
-                  <span className="font-medium">{member.name}</span>
-                  <span className="text-sm text-muted-foreground">{member.email}</span>
+            {project.members.map((member) => (
+              <div
+                key={member.id}
+                className="flex items-center justify-between p-2 bg-gray-50 rounded-md"
+              >
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{member.name}</p>
+                  <p className="text-sm text-gray-500">{member.email}</p>
                 </div>
                 <Button
-                  variant="destructive"
+                  type="button"
+                  variant="outline"
                   size="sm"
                   onClick={() => handleRemoveMember(member.id)}
-                  disabled={isSaving}
+                  disabled={isSubmitting}
                 >
                   Remove
                 </Button>
@@ -218,7 +179,7 @@ export default function TeamMembersForm({ project, open, onOpenChange }: Props) 
             ))}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </FormDialog>
   );
 }

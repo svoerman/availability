@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { FormField, inputClassName } from "@/components/ui/form-field";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -30,35 +31,34 @@ export function LoginForm() {
   return (
     <div className="space-y-6">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email
-          </label>
+        <FormField id="email" label="Email">
           <input
             id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+            className={inputClassName}
             required
           />
-        </div>
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-            Password
-          </label>
+        </FormField>
+
+        <FormField id="password" label="Password">
           <input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+            className={inputClassName}
             required
           />
-        </div>
+        </FormField>
+
         {error && (
-          <p className="text-red-500 text-sm">{error}</p>
+          <div className="rounded-md bg-red-50 p-4">
+            <div className="text-sm text-red-700">{error}</div>
+          </div>
         )}
+
         <Button type="submit" className="w-full">
           Sign in
         </Button>

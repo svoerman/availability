@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { FormDialog } from '@/components/ui/form-dialog';
 import ProjectForm, { ProjectFormData } from './ProjectForm';
+import { useFormSubmit } from '@/hooks/useFormSubmit';
 
 interface Props {
   open: boolean;
@@ -11,61 +10,34 @@ interface Props {
 }
 
 export default function NewProjectForm({ open, onOpenChange }: Props) {
-  const router = useRouter();
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { submit, isSubmitting, error } = useFormSubmit({
+    onSuccess: () => onOpenChange(false)
+  });
 
   const handleSubmit = async (data: ProjectFormData) => {
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...data,
-          organizationId: data.organizationId, // assuming organizationId is a property of ProjectFormData
-          startDate: new Date(data.startDate).toISOString(),
-          memberIds: [],
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create project');
+    await submit('/api/projects', {
+      data: {
+        ...data,
+        startDate: new Date(data.startDate).toISOString(),
+        memberIds: [],
       }
-
-      const project = await response.json();
-      router.refresh();
-      onOpenChange(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setIsSaving(false);
-    }
+    });
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Create New Project</DialogTitle>
-          <DialogDescription>
-            Fill in the project details below. Click create when you're done.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <ProjectForm
-          onSubmit={handleSubmit}
-          onCancel={() => onOpenChange(false)}
-          submitLabel="Create Project"
-          isSubmitting={isSaving}
-          error={error}
-        />
-      </DialogContent>
-    </Dialog>
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Create New Project"
+      description="Fill in the project details below. Click create when you're done."
+    >
+      <ProjectForm
+        onSubmit={handleSubmit}
+        onCancel={() => onOpenChange(false)}
+        submitLabel="Create Project"
+        isSubmitting={isSubmitting}
+        error={error}
+      />
+    </FormDialog>
   );
 }
