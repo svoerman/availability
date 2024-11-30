@@ -1,5 +1,6 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
+import { auth } from '@/lib/auth';
 import AvailabilityGrid from '@/components/AvailabilityGrid';
 import ProjectSettingsButton from './ProjectSettingsButton';
 import TeamMembersButton from './TeamMembersButton';
@@ -9,7 +10,7 @@ import { Button } from '@/components/ui/button';
 
 interface Props {
   params: Promise<{ id: string }>;
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 async function getProjectData(projectId: number) {
@@ -21,7 +22,10 @@ async function getProjectData(projectId: number) {
   try {
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      include: { members: true },
+      include: { 
+        members: true,
+        organization: true
+      },
     });
 
     if (!project) {
@@ -35,12 +39,37 @@ async function getProjectData(projectId: number) {
   }
 }
 
+async function verifyUserAccess(projectId: number, userEmail: string) {
+  const user = await prisma.user.findUnique({
+    where: { email: userEmail },
+    include: {
+      organizations: {
+        select: {
+          organizationId: true
+        }
+      }
+    }
+  });
+
+  if (!user) return false;
+
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { organizationId: true }
+  });
+
+  if (!project) return false;
+
+  return user.organizations.some(org => org.organizationId === project.organizationId);
+}
+
 export async function generateMetadata(
-  { params }: Props,
+  { params, searchParams }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   try {
     const resolvedParams = await params;
+    const resolvedSearchParams = await searchParams;
     const id = Number(resolvedParams.id);
     
     if (isNaN(id)) {
@@ -50,8 +79,11 @@ export async function generateMetadata(
         description: 'The requested project could not be found',
       };
     }
-
-    const project = await getProjectData(id);
+    
+    const project = await prisma.project.findUnique({
+      where: { id },
+      select: { name: true },
+    });
 
     if (!project) {
       return {
@@ -65,25 +97,28 @@ export async function generateMetadata(
 
     return {
       title: project.name,
-      description: project.description || 'Project Details',
+      description: `Details for project ${project.name}`,
       openGraph: {
         title: project.name,
-        description: project.description || 'Project Details',
+        description: `Details for project ${project.name}`,
         images: [...previousImages],
       },
     };
   } catch (error) {
     console.error('Error generating metadata:', error);
     return {
-      title: 'Project Error',
-      description: 'An error occurred while loading the project',
+      title: 'Error',
+      description: 'An error occurred while generating metadata',
     };
   }
 }
 
-export default async function ProjectPage({
-  params,
-}: Props) {
+export default async function ProjectPage({ params, searchParams }: Props) {
+  const session = await auth();
+  if (!session?.user?.email) {
+    redirect("/login");
+  }
+
   try {
     const resolvedParams = await params;
     const id = Number(resolvedParams.id);
@@ -93,9 +128,15 @@ export default async function ProjectPage({
       notFound();
     }
 
+    // Verify user has access to this project's organization
+    const hasAccess = await verifyUserAccess(id, session.user.email);
+    if (!hasAccess) {
+      console.error('User does not have access to this project:', id);
+      redirect("/projects");
+    }
+
     const project = await getProjectData(id);
     if (!project) {
-      console.error('Project not found:', id);
       notFound();
     }
 
@@ -103,7 +144,7 @@ export default async function ProjectPage({
       <div className="container mx-auto py-6">
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <Link href="/projects">
+            <Link href={project.organizationId ? `/projects?org=${project.organizationId}` : "/projects"}>
               <Button variant="outline" size="sm">
                 ← Back
               </Button>

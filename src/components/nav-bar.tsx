@@ -3,9 +3,41 @@
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "./ui/button";
+import { useEffect, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+
+interface Organization {
+  id: number;
+  name: string;
+}
 
 export function NavBar() {
   const { data: session } = useSession();
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const fetchOrganization = async () => {
+      const orgId = searchParams.get('org');
+      if (!orgId) {
+        setOrganization(null);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/organizations/${orgId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setOrganization(data);
+        }
+      } catch (error) {
+        console.error('Error fetching organization:', error);
+      }
+    };
+
+    fetchOrganization();
+  }, [searchParams]);
 
   return (
     <nav className="border-b">
@@ -17,6 +49,12 @@ export function NavBar() {
             </Link>
             {session && (
               <div className="ml-10 flex items-center space-x-4">
+                <Link
+                  href="/organizations"
+                  className="text-gray-700 hover:text-gray-900"
+                >
+                  {organization ? organization.name : 'Organizations'}
+                </Link>
                 <Link
                   href="/projects"
                   className="text-gray-700 hover:text-gray-900"

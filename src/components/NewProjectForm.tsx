@@ -27,6 +27,7 @@ export default function NewProjectForm({ open, onOpenChange }: Props) {
         },
         body: JSON.stringify({
           ...data,
+          organizationId: data.organizationId, // assuming organizationId is a property of ProjectFormData
           startDate: new Date(data.startDate).toISOString(),
           memberIds: [],
         }),

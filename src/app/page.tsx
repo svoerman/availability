@@ -6,9 +6,9 @@ import { redirect } from "next/navigation";
 export default async function Home() {
   const session = await auth();
   
-  // Redirect to projects if logged in
+  // Redirect to organizations if logged in
   if (session) {
-    redirect("/projects");
+    redirect("/organizations");
   }
 
   return (

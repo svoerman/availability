@@ -1,11 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Project } from '@prisma/client';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+interface Organization {
+  id: number;
+  name: string;
+}
 
 export const DAYS_OF_WEEK = [
   { value: 1, label: 'Monday' },
@@ -22,6 +28,7 @@ export interface ProjectFormData {
   description: string;
   startDate: string;
   sprintStartDay: number;
+  organizationId: number;
 }
 
 interface Props {
@@ -49,6 +56,31 @@ export default function ProjectForm({
       ? new Date(initialData.startDate).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0]
   );
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [organizationId, setOrganizationId] = useState<number | undefined>(
+    initialData?.organizationId
+  );
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOrganizations = async () => {
+      try {
+        const response = await fetch('/api/organizations');
+        if (!response.ok) throw new Error('Failed to fetch organizations');
+        const data = await response.json();
+        setOrganizations(data);
+        if (data.length === 1) {
+          setOrganizationId(data[0].id);
+        }
+      } catch (error) {
+        console.error('Failed to fetch organizations:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOrganizations();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +93,10 @@ export default function ProjectForm({
       throw new Error('Start date is required');
     }
 
+    if (!organizationId) {
+      throw new Error('Organization is required');
+    }
+
     const sprintStartDayNum = Number(sprintStartDay);
     if (isNaN(sprintStartDayNum) || sprintStartDayNum < 1 || sprintStartDayNum > 7) {
       throw new Error('Please select a valid sprint start day (1-7)');
@@ -71,11 +107,38 @@ export default function ProjectForm({
       description: description.trim(),
       startDate,
       sprintStartDay: sprintStartDayNum,
+      organizationId,
     });
   };
 
+  if (isLoading) {
+    return <div>Loading organizations...</div>;
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="organization" className="block text-sm font-medium text-gray-700">
+          Organization
+        </label>
+        <Select
+          value={organizationId?.toString()}
+          onValueChange={(value) => setOrganizationId(Number(value))}
+          required
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select an organization" />
+          </SelectTrigger>
+          <SelectContent>
+            {organizations.map((org) => (
+              <SelectItem key={org.id} value={org.id.toString()}>
+                {org.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700">
           Project Name

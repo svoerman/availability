@@ -1,20 +1,17 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { PrismaClientKnownRequestError } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
-export async function PATCH(
-  req: NextRequest,
-  context: { params: { id: string } }
-) {
+export async function PATCH(req: NextRequest) {
   try {
-    const id = Number(context.params.id);
+    const { searchParams } = new URL(req.url);
+    const id = Number(searchParams.get('id'));
     const body = await req.json();
     
     if (!body.name?.trim()) {
-      return new Response(JSON.stringify({
-        error: 'Project name is required'
-      }), { status: 400 });
+      return NextResponse.json({ error: 'Project name is required' }, { status: 400 });
     }
 
     const updated = await prisma.project.update({
@@ -29,10 +26,10 @@ export async function PATCH(
       }
     });
     
-    return new Response(JSON.stringify({
+    return NextResponse.json({
       success: true,
       project: updated
-    }), {
+    }, {
       headers: { 'Content-Type': 'application/json' }
     });
     
@@ -40,12 +37,12 @@ export async function PATCH(
     console.error('Error:', error);
     
     // Add Prisma-specific error handling
-    if (error instanceof prisma.PrismaClientKnownRequestError) {
+    if (error instanceof PrismaClientKnownRequestError) {
       // Handle specific Prisma errors
       if (error.code === 'P2002') {
-        return new Response(JSON.stringify({
+        return NextResponse.json({
           error: 'Unique constraint violation'
-        }), { status: 400 });
+        }, { status: 400 });
       }
     }
     
@@ -56,8 +53,8 @@ export async function PATCH(
         ? error 
         : 'An unexpected error occurred';
     
-    return new Response(JSON.stringify({
+    return NextResponse.json({
       error: errorMessage
-    }), { status: 500 });
+    }, { status: 500 });
   }
 }

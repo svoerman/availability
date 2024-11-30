@@ -16,7 +16,24 @@ async function main() {
     prisma.user.create({ data: { name: 'Naam 10', email: 'naam10@example.com' } }),
   ]);
 
-  // Create projects and assign users
+  // Create Kabisa organization and add all users
+  const kabisa = await prisma.organization.create({
+    data: {
+      name: 'Kabisa',
+      description: 'The cool guys',
+      members: {
+        create: users.map(user => ({
+          userId: user.id,
+          role: user.id === 1 ? 'OWNER' : 'MEMBER' // Make the first user (Rob) the owner
+        }))
+      }
+    },
+    include: {
+      members: true
+    }
+  });
+
+  // Create projects and assign users, now with organization
   const projects = await Promise.all([
     prisma.project.create({
       data: {
@@ -24,6 +41,7 @@ async function main() {
         description: "Our flagship mobile app development project",
         startDate: new Date("2024-01-01T00:00:00.000Z"),
         sprintStartDay: 1,
+        organizationId: kabisa.id,
         members: {
           connect: [
             { id: 6 },
@@ -44,6 +62,7 @@ async function main() {
         description: "Internal tooling improvements",
         startDate: new Date("2024-02-01T00:00:00.000Z"),
         sprintStartDay: 1,
+        organizationId: kabisa.id,
         members: {
           connect: [
             { id: 2 },
@@ -62,6 +81,7 @@ async function main() {
         description: "Client website redesign",
         startDate: new Date("2024-03-01T00:00:00.000Z"),
         sprintStartDay: 1,
+        organizationId: kabisa.id,
         members: {
           connect: [
             { id: 1 },
@@ -77,6 +97,7 @@ async function main() {
   ]);
 
   console.log('Seeded users:', users);
+  console.log('Seeded organization:', kabisa);
   console.log('Seeded projects:', projects);
 }
 

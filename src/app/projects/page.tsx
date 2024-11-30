@@ -5,14 +5,46 @@ import { prisma } from '@/lib/db';
 import NewProjectButton from '@/components/NewProjectButton';
 import Link from 'next/link';
 
-export default async function Projects() {
+type Props = {
+  searchParams: Promise<{ [key: string]: string | undefined }>
+}
+
+export default async function Projects({ searchParams }: Props) {
   const session = await auth();
 
   if (!session) {
     redirect("/login");
   }
 
+  const params = await searchParams;
+  const orgId = params.org ? parseInt(params.org) : null;
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email! },
+    include: {
+      organizations: {
+        select: {
+          organizationId: true
+        }
+      }
+    }
+  });
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  // Verify user has access to the requested organization
+  if (orgId && !user.organizations.some(member => member.organizationId === orgId)) {
+    redirect("/organizations");
+  }
+
   const projects = await prisma.project.findMany({
+    where: {
+      organizationId: orgId ?? {
+        in: user.organizations.map(member => member.organizationId)
+      }
+    },
     include: {
       members: true,
     },
