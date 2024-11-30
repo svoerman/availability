@@ -198,12 +198,13 @@ export default function AvailabilityGrid({ project }: Props) {
     setSelectedCells([{ userId, date, dayPart }]);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleMouseEnter = (userId: number, date: Date, dayPart: DayPart) => {
     if (!isDragging || !selectionStart || !isWithinProjectDates(date)) return;
 
     const startDate = selectionStart.date;
     const endDate = date;
+    const startDayPart = selectionStart.dayPart;
+    const endDayPart = dayPart;
 
     // Get all dates between start and end
     const dates = [];
@@ -218,11 +219,65 @@ export default function AvailabilityGrid({ project }: Props) {
     // Create selection for all cells between start and current position
     const newSelection = dates.flatMap(date => {
       if (userId === selectionStart.userId) {
-        return ['MORNING', 'AFTERNOON'].map(dayPart => ({
-          userId,
-          date: new Date(date),
-          dayPart: dayPart as DayPart,
-        }));
+        const isFirstDate = date.getTime() === startDate.getTime();
+        const isLastDate = date.getTime() === endDate.getTime();
+        const isMiddleDate = !isFirstDate && !isLastDate;
+
+        // For dates in the middle, select both parts
+        if (isMiddleDate) {
+          return ['MORNING', 'AFTERNOON'].map(part => ({
+            userId,
+            date: new Date(date),
+            dayPart: part as DayPart,
+          }));
+        }
+
+        // For the first date
+        if (isFirstDate && startDate <= endDate) {
+          const parts = startDayPart === 'MORNING' 
+            ? ['MORNING', 'AFTERNOON']
+            : ['AFTERNOON'];
+          return parts.map(part => ({
+            userId,
+            date: new Date(date),
+            dayPart: part as DayPart,
+          }));
+        }
+
+        // For the last date
+        if (isLastDate && startDate <= endDate) {
+          const parts = endDayPart === 'AFTERNOON'
+            ? ['MORNING', 'AFTERNOON']
+            : ['MORNING'];
+          return parts.map(part => ({
+            userId,
+            date: new Date(date),
+            dayPart: part as DayPart,
+          }));
+        }
+
+        // For reverse selection (dragging backwards)
+        if (isFirstDate && startDate > endDate) {
+          const parts = endDayPart === 'MORNING'
+            ? ['MORNING']
+            : ['MORNING', 'AFTERNOON'];
+          return parts.map(part => ({
+            userId,
+            date: new Date(date),
+            dayPart: part as DayPart,
+          }));
+        }
+
+        if (isLastDate && startDate > endDate) {
+          const parts = startDayPart === 'AFTERNOON'
+            ? ['AFTERNOON']
+            : ['MORNING', 'AFTERNOON'];
+          return parts.map(part => ({
+            userId,
+            date: new Date(date),
+            dayPart: part as DayPart,
+          }));
+        }
       }
       return [];
     });
