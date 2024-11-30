@@ -2,6 +2,83 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
+/**
+ * @swagger
+ * /api/organizations/{id}/users:
+ *   get:
+ *     summary: Get all users in an organization
+ *     description: Retrieves a list of all users who are members of the specified organization. Requires authentication and organization membership.
+ *     tags:
+ *       - Organizations
+ *     security:
+ *       - session: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         description: Organization ID
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of organization users successfully retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                     description: User ID
+ *                   name:
+ *                     type: string
+ *                     description: User's full name
+ *                   email:
+ *                     type: string
+ *                     description: User's email address
+ *       401:
+ *         description: Unauthorized - User is not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Unauthorized
+ *       403:
+ *         description: Forbidden - User is not a member of the organization
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Not a member of this organization
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: User not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Error fetching organization users
+ */
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }

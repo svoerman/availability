@@ -1,3 +1,99 @@
+/**
+ * @swagger
+ * /api/projects/{id}:
+ *   patch:
+ *     summary: Update a project
+ *     description: Update an existing project's details. Requires authentication.
+ *     tags:
+ *       - Projects
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Project ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Project name
+ *               description:
+ *                 type: string
+ *                 description: Project description
+ *               startDate:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Project start date
+ *               sprintStartDay:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 7
+ *                 description: Day of the week when sprints start
+ *               organizationId:
+ *                 type: integer
+ *                 description: ID of the organization this project belongs to
+ *     responses:
+ *       200:
+ *         description: Project successfully updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 project:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       description: Project ID
+ *                     name:
+ *                       type: string
+ *                       description: Project name
+ *                     description:
+ *                       type: string
+ *                       description: Project description
+ *                     startDate:
+ *                       type: string
+ *                       format: date-time
+ *                       description: Project start date
+ *                     sprintStartDay:
+ *                       type: integer
+ *                       description: Day of the week when sprints start
+ *                     organizationId:
+ *                       type: integer
+ *                       description: Organization ID
+ *       400:
+ *         description: Bad request - Invalid input
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Project name is required
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: An unexpected error occurred
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';

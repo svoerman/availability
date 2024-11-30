@@ -2,6 +2,99 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
+/**
+ * @swagger
+ * /api/projects:
+ *   get:
+ *     summary: Get all projects for the authenticated user
+ *     description: Retrieves a list of all projects from organizations where the authenticated user is a member
+ *     tags:
+ *       - Projects
+ *     security:
+ *       - session: []
+ *     responses:
+ *       200:
+ *         description: List of projects successfully retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     description: Project ID
+ *                   name:
+ *                     type: string
+ *                     description: Project name
+ *                   description:
+ *                     type: string
+ *                     description: Project description
+ *                   startDate:
+ *                     type: string
+ *                     format: date-time
+ *                     description: Project start date
+ *                   sprintStartDay:
+ *                     type: integer
+ *                     description: Day of the week when sprints start (1-7)
+ *                   organizationId:
+ *                     type: integer
+ *                     description: ID of the organization this project belongs to
+ *                   members:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                           description: User ID
+ *                         name:
+ *                           type: string
+ *                           description: User name
+ *                         email:
+ *                           type: string
+ *                           description: User email
+ *                   organization:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         description: Organization ID
+ *                       name:
+ *                         type: string
+ *                         description: Organization name
+ *       401:
+ *         description: Unauthorized - User is not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Unauthorized
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: User not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Error fetching projects
+ */
 export async function GET() {
   try {
     const session = await auth();
@@ -48,6 +141,141 @@ export async function GET() {
   }
 }
 
+/**
+ * @swagger
+ * /api/projects:
+ *   post:
+ *     summary: Create a new project
+ *     description: Creates a new project within an organization. User must be a member of the organization.
+ *     tags:
+ *       - Projects
+ *     security:
+ *       - session: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - startDate
+ *               - organizationId
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Name of the project
+ *               description:
+ *                 type: string
+ *                 description: Description of the project
+ *               startDate:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Project start date
+ *               memberIds:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 description: List of user IDs to add as project members
+ *               sprintStartDay:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 7
+ *                 description: Day of the week when sprints start (1-7, defaults to 1)
+ *               organizationId:
+ *                 type: integer
+ *                 description: ID of the organization this project belongs to
+ *     responses:
+ *       200:
+ *         description: Project successfully created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                   description: Project ID
+ *                 name:
+ *                   type: string
+ *                   description: Project name
+ *                 description:
+ *                   type: string
+ *                   description: Project description
+ *                 startDate:
+ *                   type: string
+ *                   format: date-time
+ *                   description: Project start date
+ *                 sprintStartDay:
+ *                   type: integer
+ *                   description: Day of the week when sprints start
+ *                 organizationId:
+ *                   type: integer
+ *                   description: Organization ID
+ *                 members:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         description: User ID
+ *                       name:
+ *                         type: string
+ *                         description: User name
+ *                       email:
+ *                         type: string
+ *                         description: User email
+ *                 organization:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       description: Organization ID
+ *                     name:
+ *                       type: string
+ *                       description: Organization name
+ *       401:
+ *         description: Unauthorized - User is not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Unauthorized
+ *       403:
+ *         description: Forbidden - User is not a member of the organization
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Not a member of this organization
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: User not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Internal server error
+ */
 export async function POST(request: Request) {
   try {
     const session = await auth();

@@ -1,3 +1,167 @@
+/**
+ * @swagger
+ * /api/availability:
+ *   get:
+ *     summary: Get availability for project members
+ *     description: Retrieves availability information for all members of a specified project
+ *     tags:
+ *       - Availability
+ *     parameters:
+ *       - in: query
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Project ID to get availability for
+ *     responses:
+ *       200:
+ *         description: Availability information successfully retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     description: Availability record ID
+ *                   userId:
+ *                     type: integer
+ *                     description: User ID
+ *                   date:
+ *                     type: string
+ *                     format: date
+ *                     description: Date of availability
+ *                   dayPart:
+ *                     type: string
+ *                     enum: [MORNING, AFTERNOON, EVENING]
+ *                     description: Part of the day
+ *                   status:
+ *                     type: string
+ *                     enum: [FREE, NOT_WORKING, PARTIALLY_AVAILABLE, WORKING]
+ *                     description: Availability status
+ *                   user:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         description: User ID
+ *                       name:
+ *                         type: string
+ *                         description: User name
+ *                       email:
+ *                         type: string
+ *                         description: User email
+ *       400:
+ *         description: Bad request - Missing project ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Project ID is required
+ *       404:
+ *         description: Project not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Project not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to fetch availability
+ *   post:
+ *     summary: Create or update availability
+ *     description: Creates or updates availability for a user on a specific date and day part
+ *     tags:
+ *       - Availability
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *               - date
+ *               - dayPart
+ *               - status
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *                 description: User ID
+ *               date:
+ *                 type: string
+ *                 format: date
+ *                 description: Date for availability
+ *               dayPart:
+ *                 type: string
+ *                 enum: [MORNING, AFTERNOON, EVENING]
+ *                 description: Part of the day
+ *               status:
+ *                 type: string
+ *                 enum: [FREE, NOT_WORKING, PARTIALLY_AVAILABLE, WORKING]
+ *                 description: Availability status
+ *     responses:
+ *       200:
+ *         description: Availability successfully created or updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                   description: Availability record ID
+ *                 userId:
+ *                   type: integer
+ *                   description: User ID
+ *                 date:
+ *                   type: string
+ *                   format: date
+ *                   description: Date of availability
+ *                 dayPart:
+ *                   type: string
+ *                   enum: [MORNING, AFTERNOON, EVENING]
+ *                   description: Part of the day
+ *                 status:
+ *                   type: string
+ *                   enum: [FREE, NOT_WORKING, PARTIALLY_AVAILABLE, WORKING]
+ *                   description: Availability status
+ *       400:
+ *         description: Bad request - Invalid input
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Missing required fields
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to update availability
+ */
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import type { Status } from '../../../types/prisma';
