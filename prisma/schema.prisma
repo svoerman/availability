@@ -114,6 +114,7 @@ model OrganizationMember {
 enum DayPart {
   MORNING
   AFTERNOON
+  EVENING
 }
 
 enum Status {

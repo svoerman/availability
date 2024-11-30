@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { format, addWeeks, startOfWeek, addDays } from 'date-fns';
-import { User, DayPart, Status, Project } from '@prisma/client';
+import type { User, DayPart, Status, Project } from '@prisma/client';
 
 type Props = {
   project: Project & { members: User[] };

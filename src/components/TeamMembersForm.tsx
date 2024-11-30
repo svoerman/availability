@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Project, User } from '@prisma/client';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -9,10 +8,9 @@ import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Viewport } from "@/components/ui/viewport";
 
 interface Props {
-  project: Project & { members: User[] };
+  project: { id: number; name: string; organizationId: number; members: { id: number; name: string; email: string }[] };
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -23,7 +21,7 @@ export default function TeamMembersForm({ project, open, onOpenChange }: Props) 
   const [error, setError] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<{ id: number; name: string; email: string }[]>([]);
   const [openCombobox, setOpenCombobox] = useState(false);
 
   // Fetch organization users
@@ -41,7 +39,7 @@ export default function TeamMembersForm({ project, open, onOpenChange }: Props) 
         
         // Filter out users that are already members of the project
         const filteredUsers = users.filter(
-          (user: User) => !project.members.some(member => member.id === user.id)
+          (user: { id: number; name: string; email: string }) => !project.members.some((member: { id: number; name: string; email: string }) => member.id === user.id)
         );
         setAvailableUsers(filteredUsers);
         setError(null);
@@ -118,8 +116,6 @@ export default function TeamMembersForm({ project, open, onOpenChange }: Props) 
     }
   };
 
-  const selectedUser = availableUsers.find(user => user.id.toString() === selectedUserId);
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -138,11 +134,14 @@ export default function TeamMembersForm({ project, open, onOpenChange }: Props) 
                   variant="outline"
                   role="combobox"
                   aria-expanded={openCombobox}
-                  className="flex-1 justify-between"
-                  disabled={isSaving}
-                  type="button"
+                  className={cn(
+                    "w-[200px] justify-between",
+                    !selectedUserId && "text-muted-foreground"
+                  )}
                 >
-                  {selectedUser ? selectedUser.name : "Select a user..."}
+                  {selectedUserId
+                    ? availableUsers.find((user) => user.id === parseInt(selectedUserId, 10))?.name
+                    : "Select user..."}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -201,7 +200,7 @@ export default function TeamMembersForm({ project, open, onOpenChange }: Props) 
           )}
 
           <div className="space-y-2">
-            {project.members.map((member: User) => (
+            {project.members.map((member: { id: number; name: string; email: string }) => (
               <div key={member.id} className="flex items-center justify-between p-2 border rounded">
                 <div className="flex flex-col">
                   <span className="font-medium">{member.name}</span>

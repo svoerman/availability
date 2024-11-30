@@ -24,7 +24,7 @@ export async function GET() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const organizationIds = user.organizations.map(member => member.organizationId);
+    const organizationIds = user.organizations.map((member: { organizationId: number }) => member.organizationId);
 
     const projects = await prisma.project.findMany({
       where: {

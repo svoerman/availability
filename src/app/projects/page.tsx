@@ -4,6 +4,8 @@ import { format } from 'date-fns';
 import { prisma } from '@/lib/db';
 import NewProjectButton from '@/components/NewProjectButton';
 import Link from 'next/link';
+import { OrganizationMember } from '@/types/prisma';
+import { Project } from '@prisma/client';
 
 type Props = {
   searchParams: Promise<{ [key: string]: string | undefined }>
@@ -19,8 +21,12 @@ export default async function Projects({ searchParams }: Props) {
   const params = await searchParams;
   const orgId = params.org ? parseInt(params.org) : null;
 
+  if (!session?.user?.email) {
+    redirect("/login");
+  }
+
   const user = await prisma.user.findUnique({
-    where: { email: session.user.email! },
+    where: { email: session.user.email },
     include: {
       organizations: {
         select: {
@@ -35,18 +41,19 @@ export default async function Projects({ searchParams }: Props) {
   }
 
   // Verify user has access to the requested organization
-  if (orgId && !user.organizations.some(member => member.organizationId === orgId)) {
+  if (orgId && !user.organizations.some((member: OrganizationMember) => member.organizationId === orgId)) {
     redirect("/organizations");
   }
 
   const projects = await prisma.project.findMany({
     where: {
       organizationId: orgId ?? {
-        in: user.organizations.map(member => member.organizationId)
+        in: user.organizations.map((member: OrganizationMember) => member.organizationId)
       }
     },
     include: {
       members: true,
+      organization: true,
     },
     orderBy: {
       startDate: 'asc',
@@ -61,7 +68,7 @@ export default async function Projects({ searchParams }: Props) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {projects.map((project) => (
+        {projects.map((project: Project) => (
           <Link
             key={project.id}
             href={`/projects/${project.id}`}
@@ -84,7 +91,7 @@ export default async function Projects({ searchParams }: Props) {
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
-                {project.members.map((member) => (
+                {project.members.map((member: OrganizationMember) => (
                   <span
                     key={member.id}
                     className="px-2 py-1 bg-gray-100 rounded-full text-sm"

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { Status, DayPart } from '@prisma/client';
+import type { Status } from '../../../types/prisma';
+import type { DayPart } from '../../../types/prisma';
 
 const isValidStatus = (status: unknown): status is Status => {
   return ['FREE', 'NOT_WORKING', 'PARTIALLY_AVAILABLE', 'WORKING'].includes(status as string);
@@ -43,7 +44,7 @@ export async function GET(request: Request) {
     const availability = await prisma.availability.findMany({
       where: {
         userId: {
-          in: project.members.map(member => member.id)
+          in: project.members.map((member: { id: number }) => member.id)
         }
       },
       include: {
