@@ -36,10 +36,8 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    console.log('Found organization members:', users);
     return NextResponse.json(users);
   } catch (error) {
-    console.error('Error fetching organization members:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: `Internal Server Error ${error}` }, { status: 500 });
   }
 }
