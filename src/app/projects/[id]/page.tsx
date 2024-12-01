@@ -65,11 +65,11 @@ async function verifyUserAccess(projectId: number, userEmail: string) {
 }
 
 export async function generateMetadata(
-  { params, searchParams }: Props,
+  { params }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   try {
-    const id = Number(params.id);
+    const id = Number(await params.id);
     
     if (isNaN(id)) {
       console.error('Invalid project ID in metadata:', params.id);
@@ -119,7 +119,7 @@ export default async function ProjectPage({ params, searchParams }: Props) {
   }
 
   try {
-    const id = Number(params.id);
+    const id = Number(await params.id);
     
     if (isNaN(id)) {
       console.error('Invalid project ID in URL:', params.id);

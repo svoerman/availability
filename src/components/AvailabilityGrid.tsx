@@ -23,16 +23,24 @@ type CellPosition = {
 };
 
 export default function AvailabilityGrid({ project }: Props) {
-  const [currentWeekStart, setCurrentWeekStart] = useState(() => {
-    // Try to get saved date from localStorage
+  const [currentWeekStart, setCurrentWeekStart] = useState(() => startOfWeek(new Date()));
+
+  // Handle localStorage on the client side
+  useEffect(() => {
     const savedDate = localStorage.getItem(`project-${project.id}-weekStart`);
     if (savedDate) {
       const date = new Date(savedDate);
-      // Validate the date is valid
-      return isNaN(date.getTime()) ? startOfWeek(new Date()) : date;
+      if (!isNaN(date.getTime())) {
+        setCurrentWeekStart(date);
+      }
     }
-    return startOfWeek(new Date());
-  });
+  }, [project.id]);
+
+  // Save currentWeekStart to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem(`project-${project.id}-weekStart`, currentWeekStart.toISOString());
+  }, [currentWeekStart, project.id]);
+
   const [availabilityData, setAvailabilityData] = useState<Availability[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [selectionStart, setSelectionStart] = useState<CellPosition | null>(null);
@@ -45,11 +53,6 @@ export default function AvailabilityGrid({ project }: Props) {
   const dates = Array.from({ length: 14 }, (_, i) =>
     addDays(currentWeekStart, i)
   );
-
-  // Save current week start to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem(`project-${project.id}-weekStart`, currentWeekStart.toISOString());
-  }, [currentWeekStart, project.id]);
 
   useEffect(() => {
     const fetchAvailability = async () => {
