@@ -13,7 +13,7 @@ interface SubmitOptions<TData> {
   data: TData;
 }
 
-interface UseFormSubmitOptions<TData, TResponse> {
+interface UseFormSubmitOptions<TResponse> {
   onSuccess?: (data: TResponse) => void;
   onError?: (error: Error) => void;
   successMessage?: string;
@@ -23,7 +23,7 @@ export function useFormSubmit<TData, TResponse = TData>({
   onSuccess, 
   onError, 
   successMessage 
-}: UseFormSubmitOptions<TData, TResponse> = {}) {
+}: UseFormSubmitOptions<TResponse> = {}) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

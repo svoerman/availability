@@ -4,7 +4,12 @@ import { format } from 'date-fns';
 import { prisma } from '@/lib/db';
 import NewProjectButton from '@/components/NewProjectButton';
 import Link from 'next/link';
-import { Project } from '@prisma/client';
+import { Project, User } from '@prisma/client';
+
+// Create a custom type that extends the Prisma Project type
+type ProjectWithMembers = Project & {
+  members: Pick<User, 'id' | 'name' | 'image'>[]
+};
 
 type Props = {
   searchParams: Promise<{ [key: string]: string | undefined }>
@@ -46,7 +51,7 @@ export default async function Projects({ searchParams }: Props) {
     redirect("/organizations");
   }
 
-  const projects = await prisma.project.findMany({
+  const projects: ProjectWithMembers[] = await prisma.project.findMany({
     where: {
       organizationId: orgId ?? {
         in: user.organizations.map(member => member.organizationId)

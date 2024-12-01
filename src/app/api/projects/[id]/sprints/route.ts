@@ -22,7 +22,7 @@ export async function GET(
     });
     return NextResponse.json(sprints);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch sprints' }, { status: 500 });
+    return NextResponse.json({ error: `Failed to fetch sprints: ${error}` }, { status: 500 });
   }
 }
 
@@ -50,7 +50,7 @@ export async function POST(
     return NextResponse.json(sprint);
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to create sprint' },
+      { error: `Failed to create sprint: ${error}` },
       { status: 500 }
     );
   }
@@ -80,7 +80,7 @@ export async function DELETE(
     return NextResponse.json(sprint);
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to delete sprint' },
+      { error: `Failed to delete sprint: ${error}` },
       { status: 500 }
     );
   }

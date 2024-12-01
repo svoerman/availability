@@ -15,7 +15,7 @@ export default function DocsPage() {
 
   useEffect(() => {
     if (swaggerRef.current) {
-      const ui = SwaggerUIBundle({
+      SwaggerUIBundle({
         dom_id: '#swagger-ui',
         url: '/api/swagger.json',
         deepLinking: true,

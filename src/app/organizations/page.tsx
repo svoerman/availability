@@ -47,7 +47,7 @@ export default function OrganizationsPage() {
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to load organizations',
+        description: 'Failed to load organizations: ' + error,
         variant: 'destructive',
       });
     }
@@ -75,7 +75,7 @@ export default function OrganizationsPage() {
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to create organization',
+        description: 'Failed to create organization: ' + error,
         variant: 'destructive',
       });
     }

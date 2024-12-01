@@ -26,7 +26,7 @@ function LoginFormContent() {
       if (result?.error) {
         setError("Invalid email or password");
       }
-    } catch (error) {
+    } catch {
       setError("Something went wrong");
     }
   };

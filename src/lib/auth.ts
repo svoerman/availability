@@ -5,7 +5,6 @@ import bcrypt from "bcryptjs";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import type { NextAuthConfig } from "next-auth";
-import type { User as PrismaUser } from "@prisma/client";
 import type { User } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import type { Session } from "next-auth";

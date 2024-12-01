@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format, addWeeks, startOfWeek, addDays } from 'date-fns';
 import { User, DayPart, Project } from '@prisma/client';
 import { Status } from '@/types/prisma';
@@ -46,7 +46,6 @@ export default function AvailabilityGrid({ project }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [selectionStart, setSelectionStart] = useState<CellPosition | null>(null);
   const [selectedCells, setSelectedCells] = useState<CellPosition[]>([]);
-  const [eventSource, setEventSource] = useState<EventSource | null>(null);
 
   useEffect(() => {
     const es = new EventSource('/api/availability-updates');
@@ -71,14 +70,12 @@ export default function AvailabilityGrid({ project }: Props) {
       }
     };
 
-    setEventSource(es);
-    
     return () => {
       es.close();
     };
   }, [project.id]);
 
-  const projectStartDate = new Date(project.startDate);
+  const projectStartDate = useMemo(() => new Date(project.startDate), [project.startDate]);
   const projectMembers = project.members;
 
   // Generate dates for the next 2 weeks
@@ -100,7 +97,7 @@ export default function AvailabilityGrid({ project }: Props) {
     fetchAvailability();
   }, [project.id]);
 
-  const getAvailability = (userId: number, date: Date, dayPart: DayPart) => {
+  const getAvailability = useCallback((userId: number, date: Date, dayPart: DayPart) => {
     const existingAvailability = availabilityData.find(
       (a) =>
         a.userId === userId &&
@@ -114,9 +111,15 @@ export default function AvailabilityGrid({ project }: Props) {
     const dayOfWeek = date.getDay();
     // Return 'FREE' for weekends (Saturday and Sunday), 'WORKING' for weekdays
     return dayOfWeek === 0 || dayOfWeek === 6 ? Status.FREE : Status.WORKING;
-  };
+  }, [availabilityData]);
 
-  const updateAvailability = async (
+  const isWithinProjectDates = useCallback((date: Date) => {
+    if (!projectStartDate) return false;
+    const start = startOfWeek(projectStartDate);
+    return date >= start;
+  }, [projectStartDate]);
+
+  const updateAvailability = useCallback(async (
     userId: number,
     date: Date,
     dayPart: DayPart,
@@ -178,13 +181,7 @@ export default function AvailabilityGrid({ project }: Props) {
       return updatedAvailability;
     }
     return null;
-  };
-
-  const isWithinProjectDates = (date: Date) => {
-    if (!projectStartDate) return false;
-    const start = startOfWeek(projectStartDate);
-    return date >= start;
-  };
+  }, [setAvailabilityData, isWithinProjectDates]);
 
   const getStatusColor = (status: Status, date: Date) => {
     if (!isWithinProjectDates(date)) {
@@ -325,30 +322,7 @@ export default function AvailabilityGrid({ project }: Props) {
     return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
   }, []);
 
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      // Only handle key events when there are selected cells
-      if (selectedCells.length === 0) return;
-
-      const statusMap: Record<string, Status> = {
-        '1': Status.WORKING,
-        '2': Status.PARTIALLY_AVAILABLE,
-        '3': Status.NOT_WORKING,
-        '4': Status.FREE
-      };
-
-      const newStatus = statusMap[event.key];
-      if (newStatus) {
-        updateSelectedCells(newStatus);
-      }
-    };
-
-    window.addEventListener('keypress', handleKeyPress);
-    return () => window.removeEventListener('keypress', handleKeyPress);
-  }, [selectedCells]);
-
-  const updateSelectedCells = async (newStatus: Status) => {
-
+  const updateSelectedCells = useCallback(async (newStatus: Status) => {
     const promises = selectedCells.map(cell => {
       const currentStatus = getAvailability(cell.userId, cell.date, cell.dayPart);
             
@@ -426,7 +400,29 @@ export default function AvailabilityGrid({ project }: Props) {
       // Clear selection if multiple cells were selected
       setSelectedCells([]);
     }
-  };
+  }, [selectedCells, getAvailability, updateAvailability, isWithinProjectDates, project.id]);
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      // Only handle key events when there are selected cells
+      if (selectedCells.length === 0) return;
+
+      const statusMap: Record<string, Status> = {
+        '1': Status.WORKING,
+        '2': Status.PARTIALLY_AVAILABLE,
+        '3': Status.NOT_WORKING,
+        '4': Status.FREE
+      };
+
+      const newStatus = statusMap[event.key];
+      if (newStatus) {
+        updateSelectedCells(newStatus);
+      }
+    };
+
+    window.addEventListener('keypress', handleKeyPress);
+    return () => window.removeEventListener('keypress', handleKeyPress);
+  }, [selectedCells, updateSelectedCells]);
 
   const isCellSelected = (userId: number, date: Date, dayPart: DayPart) => {
     return selectedCells.some(

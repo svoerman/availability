@@ -4,10 +4,10 @@ import { auth } from '@/lib/auth';
 import AvailabilityGrid from '@/components/AvailabilityGrid';
 import ProjectSettingsButton from './ProjectSettingsButton';
 import TeamMembersButton from './TeamMembersButton';
-import { Metadata, ResolvingMetadata } from 'next';
+import { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Calendar, Users } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { Project, User } from '@prisma/client';
 
 type Props = {
@@ -62,70 +62,39 @@ async function verifyUserAccess(projectId: number, userEmail: string) {
 
   if (!project) return false;
 
-  return user.organizations.some(org => org.organizationId === project.organizationId);
+  return user.organizations.some(member => member.organizationId === project.organizationId);
 }
 
 export async function generateMetadata(
-  { params }: Props,
-  parent: ResolvingMetadata
+  { params }: Props
 ): Promise<Metadata> {
-  try {
-    const resolvedParams = await params;
-    const projectId = parseInt(resolvedParams.id);
-    
-    if (isNaN(projectId)) {
-      console.error('Invalid project ID in metadata:', resolvedParams.id);
-      return {
-        title: 'Project Not Found',
-        description: 'The requested project could not be found',
-      };
-    }
-    
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-      select: { name: true },
-    });
+  const resolvedParams = await params;
+  const projectId = parseInt(resolvedParams.id);
+  const project = await getProjectData(projectId);
 
-    if (!project) {
-      return {
-        title: 'Project Not Found',
-        description: 'The requested project could not be found',
-      };
-    }
-
-    const parentMetadata = await parent;
-    const previousImages = parentMetadata?.openGraph?.images || [];
-
+  if (!project) {
     return {
-      title: project.name,
-      description: `Details for project ${project.name}`,
-      openGraph: {
-        title: project.name,
-        description: `Details for project ${project.name}`,
-        images: [...previousImages],
-      },
-    };
-  } catch (error) {
-    console.error('Error generating metadata:', error);
-    return {
-      title: 'Error',
-      description: 'An error occurred while generating metadata',
-    };
+      title: 'Project Not Found',
+    }
+  }
+
+  return {
+    title: project.name,
   }
 }
 
-export default async function ProjectPage({ params, searchParams }: Props) {
+export default async function ProjectPage({ params }: Props) {
   const session = await auth();
   if (!session?.user?.email) {
     redirect("/login");
   }
 
-  if (!params) {
+  const resolvedParams = await params;
+  if (!resolvedParams) {
     notFound();
   }
 
   try {
-    const resolvedParams = await params;
     const projectId = parseInt(resolvedParams.id);
     
     if (isNaN(projectId)) {
