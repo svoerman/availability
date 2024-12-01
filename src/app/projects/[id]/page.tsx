@@ -7,7 +7,7 @@ import TeamMembersButton from './TeamMembersButton';
 import { Metadata, ResolvingMetadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Calendar, Users, Pencil } from 'lucide-react';
+import { Calendar, Users } from 'lucide-react';
 
 interface Props {
   params: { id: string };

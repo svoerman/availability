@@ -1,12 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Project, Member } from '@prisma/client';
+import { Project, User } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import TeamMembersForm from '@/components/TeamMembersForm';
+import { Users } from 'lucide-react';
 
 interface Props {
-  project: Project & { members: Member[] };
+  project: Project & { 
+    members: User[]; 
+    organizationId: number;
+  };
 }
 
 export default function TeamMembersButton({ project }: Props) {
@@ -15,6 +19,7 @@ export default function TeamMembersButton({ project }: Props) {
   return (
     <>
       <Button variant="outline" onClick={() => setIsOpen(true)}>
+        <Users className="w-4 h-4 mr-2" />
         Team Members ({project.members.length})
       </Button>
       <TeamMembersForm 
