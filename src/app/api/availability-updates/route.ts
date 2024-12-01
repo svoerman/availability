@@ -6,8 +6,6 @@ export function GET() {
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       clients.add(controller);
-
-      // Remove client when connection is closed
       return () => clients.delete(controller);
     },
   });
@@ -26,9 +24,20 @@ export async function POST(request: Request) {
   
   // Broadcast to all connected clients
   const message = new TextEncoder().encode(`data: ${JSON.stringify(update)}\n\n`);
-  clients.forEach((client: ReadableStreamController<Uint8Array>) => {
-    client.enqueue(message);
-  });
+  
+  // Filter out closed connections while broadcasting
+  for (const client of clients) {
+    try {
+      client.enqueue(message);
+    } catch (error) {
+      // Remove client if the connection is closed
+      if (error instanceof Error && error.message.includes('Controller is already closed')) {
+        clients.delete(client);
+      } else {
+        console.error('Error sending SSE message:', error);
+      }
+    }
+  }
 
   return NextResponse.json({ success: true });
 }

@@ -79,50 +79,47 @@
  *                   type: string
  *                   example: Internal server error
  */
-import { NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest
 ) {
-  try {
+  const { searchParams } = request.nextUrl;
+   try {
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const pathParts = request.nextUrl.pathname.split('/');
+    const lastPart = pathParts.pop();
+    if (!lastPart) {
+      return NextResponse.json({ error: 'Invalid organization ID' }, { status: 400 });
+    }
+
+    const organizationId = parseInt(lastPart);
+    if (isNaN(organizationId)) {
+      return NextResponse.json({ error: 'Invalid organization ID' }, { status: 400 });
+    }
+
+    // Check if user is a member of the organization
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Verify the user is a member of the organization
-    const isMember = await prisma.organizationMember.findFirst({
-      where: {
-        userId: user.id,
-        organizationId: parseInt(params.id),
+      include: {
+        organizations: {
+          where: { organizationId },
+        },
       },
     });
 
-    if (!isMember) {
-      return NextResponse.json({ error: 'Not a member of this organization' }, { status: 403 });
+    if (!user || user.organizations.length === 0) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Fetch the organization
-    const organization = await prisma.organization.findFirst({
-      where: {
-        id: parseInt(params.id),
-        members: {
-          some: {
-            userId: user.id
-          }
-        }
-      },
+    const organization = await prisma.organization.findUnique({
+      where: { id: organizationId },
       include: {
         members: {
           include: {
@@ -130,12 +127,12 @@ export async function GET(
               select: {
                 id: true,
                 name: true,
-                email: true
-              }
-            }
-          }
-        }
-      }
+                email: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!organization) {
@@ -143,10 +140,10 @@ export async function GET(
     }
 
     return NextResponse.json(organization);
-  } catch (error) {
-    console.error('Error fetching organization:', error);
+  } catch (err) {
+    console.error('Error fetching organization:', err);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch organization' },
       { status: 500 }
     );
   }

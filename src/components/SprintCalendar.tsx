@@ -97,7 +97,8 @@ export default function SprintCalendar({ project }: Props) {
       <div className="flex items-center justify-between mb-4">
         <Button
           variant="outline"
-          size="icon"
+          size="sm"
+          className="h-9 w-9 p-0"
           onClick={handlePrevious}
           disabled={isSameDay(startOfMonth(currentDate), startOfMonth(project.startDate))}
         >
@@ -108,7 +109,8 @@ export default function SprintCalendar({ project }: Props) {
         </div>
         <Button
           variant="outline"
-          size="icon"
+          size="sm"
+          className="h-9 w-9 p-0"
           onClick={handleNext}
           disabled={isSameDay(startOfMonth(addMonths(currentDate, 5)), startOfMonth(maxDate))}
         >

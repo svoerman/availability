@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import SprintCalendar from '@/components/SprintCalendar';
 
-interface Props {
-  params: { id: string } | Promise<{ id: string }>;
+type Props = {
+  params: Promise<{ id: string }>,
+  searchParams: Promise<{ [key: string]: string | undefined }>
 }
 
 export default async function SprintsPage({ params }: Props) {
-  const resolvedParams = await Promise.resolve(params);
+  const resolvedParams = await params;
   const projectId = parseInt(resolvedParams.id);
   
   if (isNaN(projectId)) {

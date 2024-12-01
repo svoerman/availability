@@ -161,8 +161,7 @@ import { prisma } from '@/lib/db';
 import { auth } from '@/lib/auth';
 
 export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
+  request: NextRequest,
 ) {
   try {
     const session = await auth();
@@ -170,12 +169,12 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const projectId = Number(params.id);
+    const projectId = parseInt(request.nextUrl.pathname.split('/')[3]);
     if (isNaN(projectId)) {
       return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 
-    const { userId } = await req.json();
+    const { userId } = await request.json();
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
@@ -201,8 +200,7 @@ export async function POST(
 }
 
 export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
+  request: NextRequest,
 ) {
   try {
     const session = await auth();
@@ -210,14 +208,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const projectId = Number(params.id);
+    const projectId = parseInt(request.nextUrl.pathname.split('/')[3]);
     if (isNaN(projectId)) {
       return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 
     // Get the user ID from query parameters
-    const { searchParams } = new URL(req.url);
-    const userId = Number(searchParams.get('userId'));
+    const userId = Number(request.nextUrl.searchParams.get('userId'));
     if (isNaN(userId)) {
       return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
     }

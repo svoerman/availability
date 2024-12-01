@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { format, addWeeks, startOfWeek, addDays } from 'date-fns';
-import type { User, DayPart, Status, Project } from '@prisma/client';
+import { User, DayPart, Project } from '@prisma/client';
+import { Status } from '@/types/prisma';
 
 type Props = {
   project: Project & { members: User[] };
@@ -112,7 +113,7 @@ export default function AvailabilityGrid({ project }: Props) {
     // Get day of week (0 = Sunday, 6 = Saturday)
     const dayOfWeek = date.getDay();
     // Return 'FREE' for weekends (Saturday and Sunday), 'WORKING' for weekdays
-    return dayOfWeek === 0 || dayOfWeek === 6 ? 'FREE' : 'WORKING';
+    return dayOfWeek === 0 || dayOfWeek === 6 ? Status.FREE : Status.WORKING;
   };
 
   const updateAvailability = async (
@@ -133,10 +134,10 @@ export default function AvailabilityGrid({ project }: Props) {
       statusToSet = newStatus;
     } else {
       const statusOrder: Status[] = [
-        'FREE',
-        'NOT_WORKING',
-        'PARTIALLY_AVAILABLE',
-        'WORKING',
+        Status.FREE,
+        Status.NOT_WORKING,
+        Status.PARTIALLY_AVAILABLE,
+        Status.WORKING,
       ];
       const currentIndex = statusOrder.indexOf(currentStatus);
       statusToSet = statusOrder[(currentIndex + 1) % statusOrder.length];
@@ -199,13 +200,13 @@ export default function AvailabilityGrid({ project }: Props) {
     }
 
     switch (status) {
-      case 'FREE':
+      case Status.FREE:
         return 'bg-red-400 hover:bg-red-500 cursor-pointer';
-      case 'NOT_WORKING':
+      case Status.NOT_WORKING:
         return 'bg-orange-400 hover:bg-orange-500 cursor-pointer';
-      case 'PARTIALLY_AVAILABLE':
+      case Status.PARTIALLY_AVAILABLE:
         return 'bg-yellow-400 hover:bg-yellow-500 cursor-pointer';
-      case 'WORKING':
+      case Status.WORKING:
         return 'bg-green-400 hover:bg-green-500 cursor-pointer';
       default:
         return 'bg-gray-200 hover:bg-gray-300 cursor-pointer';
@@ -338,10 +339,10 @@ export default function AvailabilityGrid({ project }: Props) {
       if (selectedCells.length === 0) return;
 
       const statusMap: Record<string, Status> = {
-        '1': 'WORKING',
-        '2': 'PARTIALLY_AVAILABLE',
-        '3': 'NOT_WORKING',
-        '4': 'FREE'
+        '1': Status.WORKING,
+        '2': Status.PARTIALLY_AVAILABLE,
+        '3': Status.NOT_WORKING,
+        '4': Status.FREE
       };
 
       const newStatus = statusMap[event.key];
@@ -436,8 +437,9 @@ export default function AvailabilityGrid({ project }: Props) {
     if (!isWithinProjectDates(date)) return;
     
     const currentStatus = getAvailability(userId, date, dayPart);
-    const nextStatus = ['FREE', 'NOT_WORKING', 'PARTIALLY_AVAILABLE', 'WORKING'][
-      (['FREE', 'NOT_WORKING', 'PARTIALLY_AVAILABLE', 'WORKING'].indexOf(currentStatus as Status) + 1) % 4
+    const statusValues = [Status.FREE, Status.NOT_WORKING, Status.PARTIALLY_AVAILABLE, Status.WORKING];
+    const nextStatus = statusValues[
+      (statusValues.indexOf(currentStatus as Status) + 1) % statusValues.length
     ];
 
     try {
@@ -554,7 +556,7 @@ export default function AvailabilityGrid({ project }: Props) {
       </div>
       <div className="mt-4 flex gap-2 flex-wrap justify-center">
         <button
-          onClick={() => updateSelectedCells('WORKING')}
+          onClick={() => updateSelectedCells(Status.WORKING)}
           disabled={selectedCells.length === 0}
           className={`px-4 py-2 rounded flex items-center gap-2 ${
             selectedCells.length === 0
@@ -566,7 +568,7 @@ export default function AvailabilityGrid({ project }: Props) {
           Working (1)
         </button>
         <button
-          onClick={() => updateSelectedCells('PARTIALLY_AVAILABLE')}
+          onClick={() => updateSelectedCells(Status.PARTIALLY_AVAILABLE)}
           disabled={selectedCells.length === 0}
           className={`px-4 py-2 rounded flex items-center gap-2 ${
             selectedCells.length === 0
@@ -578,7 +580,7 @@ export default function AvailabilityGrid({ project }: Props) {
           Partially Available (2)
         </button>
         <button
-          onClick={() => updateSelectedCells('NOT_WORKING')}
+          onClick={() => updateSelectedCells(Status.NOT_WORKING)}
           disabled={selectedCells.length === 0}
           className={`px-4 py-2 rounded flex items-center gap-2 ${
             selectedCells.length === 0
@@ -590,7 +592,7 @@ export default function AvailabilityGrid({ project }: Props) {
           Other assignments (3)
         </button>
         <button
-          onClick={() => updateSelectedCells('FREE')}
+          onClick={() => updateSelectedCells(Status.FREE)}
           disabled={selectedCells.length === 0}
           className={`px-4 py-2 rounded flex items-center gap-2 ${
             selectedCells.length === 0

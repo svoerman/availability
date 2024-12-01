@@ -45,15 +45,13 @@ export default function ProjectForm({
 }: Props) {
   const [name, setName] = useState(initialData?.name || '');
   const [description, setDescription] = useState(initialData?.description || '');
-  const [sprintStartDay, setSprintStartDay] = useState(initialData?.sprintStartDay || 1);
+  const [sprintStartDay, setSprintStartDay] = useState<number>(initialData?.sprintStartDay || 1);
   const [startDate, setStartDate] = useState(
-    initialData
-      ? new Date(initialData.startDate).toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0]
+    initialData?.startDate ? new Date(initialData.startDate).toISOString().split('T')[0] : ''
   );
   
   const { organizations, organizationId, setOrganizationId, isLoading } = useOrganizations(
-    initialData?.organizationId
+    initialData?.organizationId ?? undefined
   );
 
   const handleSubmit = async (e: React.FormEvent) => {

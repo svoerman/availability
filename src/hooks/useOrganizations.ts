@@ -5,7 +5,7 @@ interface Organization {
   name: string;
 }
 
-export function useOrganizations(initialOrgId?: number) {
+export function useOrganizations(initialOrgId: number | null | undefined) {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [organizationId, setOrganizationId] = useState<number>(initialOrgId || 0);
   const [isLoading, setIsLoading] = useState(true);

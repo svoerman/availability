@@ -23,7 +23,6 @@ export default function ProjectSettings({ project, onUpdate }: Props) {
   const [description, setDescription] = useState(project.description || '');
   const [sprintStartDay, setSprintStartDay] = useState(project.sprintStartDay);
   const [startDate, setStartDate] = useState(project.startDate.toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(project.endDate?.toISOString().split('T')[0] || '');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +31,6 @@ export default function ProjectSettings({ project, onUpdate }: Props) {
       description,
       sprintStartDay,
       startDate: new Date(startDate),
-      endDate: endDate ? new Date(endDate) : null,
     });
   };
 
@@ -60,27 +58,9 @@ export default function ProjectSettings({ project, onUpdate }: Props) {
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           rows={3}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
         />
-      </div>
-
-      <div>
-        <label htmlFor="sprintStartDay" className="block text-sm font-medium text-gray-700">
-          Sprint Start Day
-        </label>
-        <select
-          id="sprintStartDay"
-          value={sprintStartDay}
-          onChange={(e) => setSprintStartDay(Number(e.target.value))}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-        >
-          {DAYS_OF_WEEK.map((day) => (
-            <option key={day.value} value={day.value}>
-              {day.label}
-            </option>
-          ))}
-        </select>
       </div>
 
       <div>
@@ -98,19 +78,24 @@ export default function ProjectSettings({ project, onUpdate }: Props) {
       </div>
 
       <div>
-        <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
-          End Date
+        <label htmlFor="sprintStartDay" className="block text-sm font-medium text-gray-700">
+          Sprint Start Day
         </label>
-        <input
-          type="date"
-          id="endDate"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
+        <select
+          id="sprintStartDay"
+          value={sprintStartDay}
+          onChange={(e) => setSprintStartDay(Number(e.target.value))}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-        />
+        >
+          {DAYS_OF_WEEK.map(({ value, label }) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
         <button
           type="submit"
           className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"

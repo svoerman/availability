@@ -4,7 +4,6 @@ import { format } from 'date-fns';
 import { prisma } from '@/lib/db';
 import NewProjectButton from '@/components/NewProjectButton';
 import Link from 'next/link';
-import { OrganizationMember } from '@/types/prisma';
 import { Project } from '@prisma/client';
 
 type Props = {
@@ -30,7 +29,9 @@ export default async function Projects({ searchParams }: Props) {
     include: {
       organizations: {
         select: {
-          organizationId: true
+          organizationId: true,
+          userId: true,
+          role: true
         }
       }
     }
@@ -41,23 +42,29 @@ export default async function Projects({ searchParams }: Props) {
   }
 
   // Verify user has access to the requested organization
-  if (orgId && !user.organizations.some((member: OrganizationMember) => member.organizationId === orgId)) {
+  if (orgId && !user.organizations.some(member => member.organizationId === orgId)) {
     redirect("/organizations");
   }
 
   const projects = await prisma.project.findMany({
     where: {
       organizationId: orgId ?? {
-        in: user.organizations.map((member: OrganizationMember) => member.organizationId)
+        in: user.organizations.map(member => member.organizationId)
       }
     },
     include: {
-      members: true,
       organization: true,
+      members: {
+        select: {
+          id: true,
+          name: true,
+          image: true
+        }
+      }
     },
     orderBy: {
-      startDate: 'asc',
-    },
+      startDate: 'asc'
+    }
   });
 
   return (
@@ -68,7 +75,7 @@ export default async function Projects({ searchParams }: Props) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {projects.map((project: Project) => (
+        {projects.map(project => (
           <Link
             key={project.id}
             href={`/projects/${project.id}`}
@@ -81,17 +88,14 @@ export default async function Projects({ searchParams }: Props) {
               )}
               <div className="flex justify-between text-sm text-gray-500">
                 <span>{project.members.length} members</span>
-                <div>
-                  Start: {format(new Date(project.startDate), 'd MMM yyyy')}
-                </div>
-                {project.endDate && (
+                <div className="text-sm text-gray-600">
                   <div>
-                    End: {format(new Date(project.endDate), 'd MMM yyyy')}
+                    Start: {format(new Date(project.startDate), 'd MMM yyyy')}
                   </div>
-                )}
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                {project.members.map((member: OrganizationMember) => (
+                {project.members.map(member => (
                   <span
                     key={member.id}
                     className="px-2 py-1 bg-gray-100 rounded-full text-sm"

@@ -83,6 +83,16 @@
  *                 error:
  *                   type: string
  *                   example: Project name is required
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Unauthorized
  *       500:
  *         description: Internal server error
  *         content:
@@ -97,35 +107,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { auth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
+  request: NextRequest,
 ) {
   try {
-    const id = Number(params.id);
-    if (isNaN(id)) {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const projectId = parseInt(request.nextUrl.pathname.split('/')[3]);
+    if (isNaN(projectId)) {
       return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 
-    const body = await req.json();
+    const data = await request.json();
     
-    if (!body.name?.trim()) {
+    if (!data.name?.trim()) {
       return NextResponse.json({ error: 'Project name is required' }, { status: 400 });
     }
 
     const updated = await prisma.project.update({
       where: {
-        id
+        id: projectId
       },
       data: {
-        name: body.name,
-        description: body.description,
-        startDate: new Date(body.startDate),
-        sprintStartDay: body.sprintStartDay,
-        organizationId: body.organizationId
+        name: data.name,
+        description: data.description,
+        startDate: new Date(data.startDate),
+        sprintStartDay: data.sprintStartDay,
+        organizationId: data.organizationId
       }
     });
     

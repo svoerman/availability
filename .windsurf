@@ -1,0 +1,13 @@
+This project uses Next.js 15, React 19 with Prisma 6.0.0. It also uses Radix UI and Shadcn UI. It is a typescript project.
+Please use the modern way of using Next.js 15, React 19 with Prisma 6.0.0.
+{
+  "framework": "next",
+  "version": "15.0.3",
+  "react": {
+    "version": "19.0.0-rc-66855b96-20241106"
+  },
+  "prisma": {
+    "version": "6.0.0"
+  }
+}
+

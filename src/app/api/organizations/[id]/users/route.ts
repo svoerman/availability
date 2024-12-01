@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
@@ -68,6 +68,16 @@ import { prisma } from '@/lib/db';
  *                 error:
  *                   type: string
  *                   example: User not found
+ *       400:
+ *         description: Invalid organization ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Invalid organization ID
  *       500:
  *         description: Internal server error
  *         content:
@@ -80,13 +90,17 @@ import { prisma } from '@/lib/db';
  *                   example: Error fetching organization users
  */
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest
 ) {
   try {
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const organizationId = parseInt(request.nextUrl.pathname.split('/')[3]);
+    if (isNaN(organizationId)) {
+      return NextResponse.json({ error: 'Invalid organization ID' }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({
@@ -101,7 +115,7 @@ export async function GET(
     const isMember = await prisma.organizationMember.findFirst({
       where: {
         userId: user.id,
-        organizationId: parseInt(params.id),
+        organizationId: organizationId,
       },
     });
 
@@ -114,7 +128,7 @@ export async function GET(
       where: {
         organizations: {
           some: {
-            organizationId: parseInt(params.id),
+            organizationId: organizationId,
           },
         },
       },

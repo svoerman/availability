@@ -8,10 +8,11 @@ import { Metadata, ResolvingMetadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Calendar, Users } from 'lucide-react';
+import { Project, User } from '@prisma/client';
 
-interface Props {
-  params: { id: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+type Props = {
+  params: Promise<{ id: string }>,
+  searchParams: Promise<{ [key: string]: string | undefined }>
 }
 
 async function getProjectData(projectId: number) {
@@ -65,15 +66,14 @@ async function verifyUserAccess(projectId: number, userEmail: string) {
 }
 
 export async function generateMetadata(
-  { params }: { params: { id: string } },
+  { params }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   try {
-    // Ensure params.id is properly resolved
-    const resolvedParams = await Promise.resolve(params);
-    const id = Number(resolvedParams.id);
+    const resolvedParams = await params;
+    const projectId = parseInt(resolvedParams.id);
     
-    if (isNaN(id)) {
+    if (isNaN(projectId)) {
       console.error('Invalid project ID in metadata:', resolvedParams.id);
       return {
         title: 'Project Not Found',
@@ -82,7 +82,7 @@ export async function generateMetadata(
     }
     
     const project = await prisma.project.findUnique({
-      where: { id },
+      where: { id: projectId },
       select: { name: true },
     });
 
@@ -114,36 +114,33 @@ export async function generateMetadata(
   }
 }
 
-export default async function ProjectPage({ 
-  params,
-  searchParams 
-}: { 
-  params: { id: string },
-  searchParams: { [key: string]: string | string[] | undefined }
-}) {
+export default async function ProjectPage({ params, searchParams }: Props) {
   const session = await auth();
   if (!session?.user?.email) {
     redirect("/login");
   }
 
+  if (!params) {
+    notFound();
+  }
+
   try {
-    // Ensure params.id is properly resolved
-    const resolvedParams = await Promise.resolve(params);
-    const id = Number(resolvedParams.id);
+    const resolvedParams = await params;
+    const projectId = parseInt(resolvedParams.id);
     
-    if (isNaN(id)) {
+    if (isNaN(projectId)) {
       console.error('Invalid project ID in URL:', resolvedParams.id);
       notFound();
     }
 
     // Verify user has access to this project's organization
-    const hasAccess = await verifyUserAccess(id, session.user.email);
+    const hasAccess = await verifyUserAccess(projectId, session.user.email);
     if (!hasAccess) {
-      console.error('User does not have access to this project:', id);
+      console.error('User does not have access to this project:', projectId);
       redirect("/projects");
     }
 
-    const project = await getProjectData(id);
+    const project = await getProjectData(projectId);
     if (!project) {
       notFound();
     }
@@ -156,11 +153,13 @@ export default async function ProjectPage({
             <div className="space-x-4">
               <Link href={`/projects/${project.id}/sprints`}>
                 <Button variant="outline">
-                  <Calendar className="w-4 h-4 mr-2" />
+                  <Calendar className="mr-2 h-4 w-4" />
                   Sprints
                 </Button>
               </Link>
-              <TeamMembersButton project={project} />
+              {project.organizationId && (
+                <TeamMembersButton project={project as Project & { members: User[]; organizationId: number }} />
+              )}
               <ProjectSettingsButton project={project} />
             </div>
           </div>

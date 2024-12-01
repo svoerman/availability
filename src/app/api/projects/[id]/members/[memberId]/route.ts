@@ -1,11 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
-export async function DELETE(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const projectId = Number(searchParams.get('id'));
-    const memberId = Number(searchParams.get('memberId'));
+    const url = new URL(request.url);
+    const segments = url.pathname.split('/');
+    const projectId = Number(segments[segments.length - 3]);
+    const memberId = Number(segments[segments.length - 1]);
+
+    if (isNaN(projectId) || isNaN(memberId)) {
+      return NextResponse.json({ error: 'Invalid project or member ID' }, { status: 400 });
+    }
+
+    // Connect the user to the project
+    await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        members: {
+          connect: { id: memberId },
+        },
+      },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error adding member to project:', error);
+    return NextResponse.json({ error: 'Failed to add member to project' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const url = new URL(request.url);
+    const segments = url.pathname.split('/');
+    const projectId = Number(segments[segments.length - 3]);
+    const memberId = Number(segments[segments.length - 1]);
 
     if (isNaN(projectId) || isNaN(memberId)) {
       return NextResponse.json({ error: 'Invalid project or member ID' }, { status: 400 });

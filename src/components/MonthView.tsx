@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { format, eachWeekOfInterval, eachDayOfInterval, startOfMonth, endOfMonth, isSameMonth, isSameDay, isWeekend } from 'date-fns';
 import { cn } from '@/lib/utils';
-import type { Sprint } from '@prisma/client';
 
 interface MonthViewProps {
   month: Date;
@@ -30,7 +29,7 @@ export default function MonthView({ month, sprints, onDateSelect, minDate, maxDa
         {format(month, 'MMMM yyyy')}
       </div>
       <div className="grid grid-cols-7 gap-1">
-        {/* Week day headers */}
+        {/* Weekday headers */}
         {weekDays.map((day) => (
           <div
             key={day}
