@@ -3,23 +3,22 @@
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "./ui/button";
-import { useEffect, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 
 interface Organization {
   id: number;
   name: string;
 }
 
-export function NavBar() {
+function NavBarContent() {
   const { data: session } = useSession();
   const [organization, setOrganization] = useState<Organization | null>(null);
   const searchParams = useSearchParams();
-  const pathname = usePathname();
 
   useEffect(() => {
     const fetchOrganization = async () => {
-      const orgId = searchParams.get('org');
+      const orgId = searchParams?.get('org');
       if (!orgId) {
         setOrganization(null);
         return;
@@ -91,5 +90,13 @@ export function NavBar() {
         </div>
       </div>
     </nav>
+  );
+}
+
+export function NavBar() {
+  return (
+    <Suspense fallback={<nav className="border-b"><div className="container mx-auto h-16"></div></nav>}>
+      <NavBarContent />
+    </Suspense>
   );
 }

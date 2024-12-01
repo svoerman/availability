@@ -363,7 +363,6 @@ export default function AvailabilityGrid({ project }: Props) {
     
     const results = await Promise.all(promises);
 
-
     // Broadcast updates to other clients
     await Promise.all(
       results.map(async (result) => {
