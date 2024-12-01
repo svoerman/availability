@@ -65,14 +65,16 @@ async function verifyUserAccess(projectId: number, userEmail: string) {
 }
 
 export async function generateMetadata(
-  { params }: Props,
+  { params }: { params: { id: string } },
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   try {
-    const id = Number(await params.id);
+    // Ensure params.id is properly resolved
+    const resolvedParams = await Promise.resolve(params);
+    const id = Number(resolvedParams.id);
     
     if (isNaN(id)) {
-      console.error('Invalid project ID in metadata:', params.id);
+      console.error('Invalid project ID in metadata:', resolvedParams.id);
       return {
         title: 'Project Not Found',
         description: 'The requested project could not be found',
@@ -91,8 +93,8 @@ export async function generateMetadata(
       };
     }
 
-    // Merge with parent metadata
-    const previousImages = (await parent).openGraph?.images || [];
+    const parentMetadata = await parent;
+    const previousImages = parentMetadata?.openGraph?.images || [];
 
     return {
       title: project.name,
@@ -112,17 +114,25 @@ export async function generateMetadata(
   }
 }
 
-export default async function ProjectPage({ params, searchParams }: Props) {
+export default async function ProjectPage({ 
+  params,
+  searchParams 
+}: { 
+  params: { id: string },
+  searchParams: { [key: string]: string | string[] | undefined }
+}) {
   const session = await auth();
   if (!session?.user?.email) {
     redirect("/login");
   }
 
   try {
-    const id = Number(await params.id);
+    // Ensure params.id is properly resolved
+    const resolvedParams = await Promise.resolve(params);
+    const id = Number(resolvedParams.id);
     
     if (isNaN(id)) {
-      console.error('Invalid project ID in URL:', params.id);
+      console.error('Invalid project ID in URL:', resolvedParams.id);
       notFound();
     }
 

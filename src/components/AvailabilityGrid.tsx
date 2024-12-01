@@ -45,6 +45,37 @@ export default function AvailabilityGrid({ project }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [selectionStart, setSelectionStart] = useState<CellPosition | null>(null);
   const [selectedCells, setSelectedCells] = useState<CellPosition[]>([]);
+  const [eventSource, setEventSource] = useState<EventSource | null>(null);
+
+  useEffect(() => {
+    const es = new EventSource('/api/availability-updates');
+    
+    es.onmessage = (event) => {
+      const update = JSON.parse(event.data);
+      if (update.projectId === project.id) {
+        setAvailabilityData(prev => {
+          const newAvailabilityData = [...prev];
+          const index = newAvailabilityData.findIndex(
+            a => a.userId === update.userId && 
+                 a.date === update.date && 
+                 a.dayPart === update.dayPart
+          );
+          if (index !== -1) {
+            newAvailabilityData[index] = { ...newAvailabilityData[index], status: update.status };
+          } else {
+            newAvailabilityData.push(update);
+          }
+          return newAvailabilityData;
+        });
+      }
+    };
+
+    setEventSource(es);
+    
+    return () => {
+      es.close();
+    };
+  }, [project.id]);
 
   const projectStartDate = new Date(project.startDate);
   const projectMembers = project.members;
@@ -401,6 +432,36 @@ export default function AvailabilityGrid({ project }: Props) {
     );
   };
 
+  const handleCellClick = async (userId: number, date: Date, dayPart: DayPart) => {
+    if (!isWithinProjectDates(date)) return;
+    
+    const currentStatus = getAvailability(userId, date, dayPart);
+    const nextStatus = ['FREE', 'NOT_WORKING', 'PARTIALLY_AVAILABLE', 'WORKING'][
+      (['FREE', 'NOT_WORKING', 'PARTIALLY_AVAILABLE', 'WORKING'].indexOf(currentStatus as Status) + 1) % 4
+    ];
+
+    try {
+      await updateAvailability(userId, date, dayPart, currentStatus as Status, nextStatus);
+      
+      // Broadcast the update
+      await fetch('/api/availability-updates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectId: project.id,
+          userId,
+          date: format(date, 'yyyy-MM-dd'),
+          dayPart,
+          status: nextStatus,
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to update availability:', error);
+    }
+  };
+
   return (
     <div className="overflow-x-auto">
       <div className="flex justify-between items-center mb-4">
@@ -478,12 +539,7 @@ export default function AvailabilityGrid({ project }: Props) {
                         onClick={() => 
                           withinDates && 
                           !isDragging && 
-                          updateAvailability(
-                            user.id,
-                            date,
-                            dayPart,
-                            status as Status
-                          )
+                          handleCellClick(user.id, date, dayPart)
                         }
                         disabled={!withinDates}
                         title={`${format(date, 'd MMM')} - ${dayPart.toLowerCase()}\nStatus: ${status.toLowerCase().replace(/_/g, ' ')}`}
