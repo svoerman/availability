@@ -143,14 +143,6 @@ export default function AvailabilityGrid({ project }: Props) {
       statusToSet = statusOrder[(currentIndex + 1) % statusOrder.length];
     }
 
-    console.log('Updating availability:', {
-      userId,
-      date: format(date, 'yyyy-MM-dd'),
-      dayPart,
-      currentStatus,
-      newStatus,
-      statusToSet
-    });
 
     const response = await fetch('/api/availability', {
       method: 'POST',
@@ -356,18 +348,10 @@ export default function AvailabilityGrid({ project }: Props) {
   }, [selectedCells]);
 
   const updateSelectedCells = async (newStatus: Status) => {
-    console.log('Updating selected cells to:', newStatus);
-    console.log('Selected cells:', selectedCells);
 
     const promises = selectedCells.map(cell => {
       const currentStatus = getAvailability(cell.userId, cell.date, cell.dayPart);
-      console.log('Cell current status:', {
-        userId: cell.userId,
-        date: format(cell.date, 'yyyy-MM-dd'),
-        dayPart: cell.dayPart,
-        currentStatus
-      });
-      
+            
       return updateAvailability(
         cell.userId,
         cell.date,
@@ -378,7 +362,28 @@ export default function AvailabilityGrid({ project }: Props) {
     });
     
     const results = await Promise.all(promises);
-    console.log('Update results:', results);
+
+
+    // Broadcast updates to other clients
+    await Promise.all(
+      results.map(async (result) => {
+        if (result) {
+          await fetch('/api/availability-updates', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              projectId: project.id,
+              userId: result.userId,
+              date: result.date,
+              dayPart: result.dayPart,
+              status: result.status,
+            }),
+          });
+        }
+      })
+    );
 
     // Only proceed with selecting next cell if exactly one cell was selected
     if (selectedCells.length === 1) {

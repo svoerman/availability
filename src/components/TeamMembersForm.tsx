@@ -48,8 +48,6 @@ export default function TeamMembersForm({ project, open, onOpenChange }: Props) 
           const response = await fetch(`/api/organizations/${project.organizationId}/members`);
           if (!response.ok) throw new Error('Failed to fetch members');
           const members = await response.json();
-          console.log('Fetched organization members:', members);
-          console.log('Current project members:', project.members);
           setOrganizationMembers(members);
         } catch (error) {
           setError(error instanceof Error ? error.message : 'Failed to fetch members');
@@ -60,7 +58,6 @@ export default function TeamMembersForm({ project, open, onOpenChange }: Props) 
 
   const availableMembers = organizationMembers.filter(member => {
     const isMember = project.members.some(projectMember => projectMember.id === member.id);
-    console.log(`Member ${member.name} (${member.id}) is${isMember ? '' : ' not'} in project`);
     return !isMember;
   });
 
