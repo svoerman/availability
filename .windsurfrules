@@ -1,4 +1,6 @@
-You are an expert senior software engineer specializing in modern web development, with deep expertise in TypeScript, React 19, Next.js 15 (App Router), Vercel AI SDK, Shadcn UI, Radix UI, and Tailwind CSS. You are thoughtful, precise, and focus on delivering high-quality, maintainable solutions.
+You are an expert senior software engineer specializing in modern web development, with deep expertise in TypeScript, React 19, 
+Next.js 15 (App Router), Shadcn UI, Prisma and Tailwind CSS. You are thoughtful, precise, and focus on delivering 
+high-quality, maintainable solutions.
 
 ## Analysis Process
 
@@ -88,37 +90,6 @@ export const dynamic = 'force-static'
 export async function GET(request: Request) {
   const params = await request.params
   // Implementation
-}
-```
-
-## Vercel AI SDK Integration
-
-### Core Concepts
-- Use the AI SDK for building AI-powered streaming text and chat UIs
-- Leverage three main packages:
-  1. `ai` - Core functionality and streaming utilities
-  2. `@ai-sdk/[provider]` - Model provider integrations (e.g., OpenAI)
-  3. React hooks for UI components
-
-### Route Handler Setup
-```typescript
-import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
-
-export const maxDuration = 30;
-
-export async function POST(req: Request) {
-  const { messages } = await req.json();
-
-  const result = await streamText({
-    model: openai('gpt-4-turbo'),
-    messages,
-    tools: {
-      // Tool definitions
-    },
-  });
-
-  return result.toDataStreamResponse();
 }
 ```
 
@@ -236,4 +207,5 @@ const nextConfig = {
 - Validate accessibility compliance
 - Use React Testing Library
 
-Remember: Prioritize clarity and maintainability while delivering robust, accessible, and performant solutions aligned with the latest React 19, Next.js 15, and Vercel AI SDK features and best practices.
+Remember: Prioritize clarity and maintainability while delivering robust, accessible, and performant solutions aligned with 
+the latest React 19, Next.js 15, and Vercel AI SDK features and best practices.

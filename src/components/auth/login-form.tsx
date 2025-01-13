@@ -1,95 +1,108 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FormField, inputClassName } from "@/components/ui/form-field";
+import { useFormStatus } from "react-dom";
+import { useState } from "react";
 
-function LoginFormContent() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+async function loginAction(formData: FormData) {
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  const callbackUrl = formData.get("callbackUrl") as string;
+
+  try {
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+      callbackUrl,
+    });
+
+    if (result?.error) {
+      return { error: "Invalid email or password" };
+    }
+    return { success: true };
+  } catch {
+    return { error: "Something went wrong" };
+  }
+}
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending ? "Signing in..." : "Sign in"}
+    </Button>
+  );
+}
+
+export function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get("callbackUrl") ?? "/projects";
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
     try {
       const result = await signIn("credentials", {
         email,
         password,
-        redirect: true,
+        redirect: false,
         callbackUrl,
       });
-      
+
       if (result?.error) {
         setError("Invalid email or password");
       }
     } catch {
       setError("Something went wrong");
     }
-  };
+  }
 
-  return (
-    <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-      <FormField id="email" label="Email">
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className={inputClassName}
-          required
-        />
-      </FormField>
-
-      <FormField id="password" label="Password">
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className={inputClassName}
-          required
-        />
-      </FormField>
-
-      {error && (
-        <div className="rounded-md bg-red-50 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg
-                className="h-5 w-5 text-red-400"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <Button type="submit" className="w-full">
-        Sign In
-      </Button>
-    </form>
-  );
-}
-
-export function LoginForm() {
   return (
     <div className="w-full">
       <div className="space-y-6">
-        <LoginFormContent />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input type="hidden" name="callbackUrl" value={callbackUrl} />
+          
+          <FormField
+            label="Email"
+            error={error}
+            className="space-y-2"
+          >
+            <input
+              type="email"
+              name="email"
+              className={inputClassName}
+              required
+              aria-label="Email address"
+              autoComplete="email"
+            />
+          </FormField>
+
+          <FormField
+            label="Password"
+            error={error}
+            className="space-y-2"
+          >
+            <input
+              type="password"
+              name="password"
+              className={inputClassName}
+              required
+              aria-label="Password"
+              autoComplete="current-password"
+            />
+          </FormField>
+
+          <SubmitButton />
+        </form>
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
