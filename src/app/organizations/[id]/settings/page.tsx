@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { OrganizationSettingsForm } from "./organization-settings-form";
+import { DeleteOrganization } from "./delete-organization";
 import { UserRole } from "@prisma/client";
 import { type Organization, type User } from "@prisma/client";
 
@@ -82,29 +83,21 @@ export default async function OrganizationSettingsPage({
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-destructive">Danger Zone</CardTitle>
-            <CardDescription>
-              Destructive actions that cannot be undone
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border border-destructive/20 rounded-lg p-4 bg-destructive/5">
-                <div>
-                  <h3 className="font-medium">Delete Organization</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Permanently delete this organization and all of its data
-                  </p>
-                </div>
-                <Button variant="destructive" size="sm">
-                  Delete Organization
-                </Button>
+        {organization.members.some(m => m.role === UserRole.OWNER) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-destructive">Danger Zone</CardTitle>
+              <CardDescription>
+                Destructive actions that cannot be undone
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <DeleteOrganization organization={organization} />
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

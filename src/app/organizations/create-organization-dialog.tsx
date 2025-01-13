@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 
@@ -29,9 +29,15 @@ export function CreateOrganizationDialog() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
     try {
+      const formData = new FormData(event.currentTarget);
       const response = await fetch("/api/organizations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -42,19 +48,17 @@ export function CreateOrganizationDialog() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        setError(errorText);
-        return;
+        const data = await response.json();
+        throw new Error(data.error || "Failed to create organization");
       }
 
-      toast({
-        title: "Success",
-        description: "Organization created successfully",
-      });
+      toast.success("Organization created successfully");
       setOpen(false);
       router.refresh();
     } catch (err) {
-      setError("Failed to create organization");
+      setError(err instanceof Error ? err.message : "Failed to create organization");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -74,6 +78,7 @@ export function CreateOrganizationDialog() {
               id="name"
               name="name"
               required
+              placeholder="Enter organization name"
               aria-label="Organization name"
             />
           </div>
@@ -82,15 +87,28 @@ export function CreateOrganizationDialog() {
             <Textarea
               id="description"
               name="description"
+              placeholder="Enter organization description (optional)"
               aria-label="Organization description"
             />
           </div>
           {error && (
-            <p className="text-sm text-red-500" role="alert">
+            <p className="text-sm text-destructive" role="alert">
               {error}
             </p>
           )}
-          <SubmitButton />
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : "Create Organization"}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
