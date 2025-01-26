@@ -14,9 +14,9 @@ type Props = {
 
 export default async function SprintsPage({ params }: Props) {
   const resolvedParams = await params;
-  const projectId = parseInt(resolvedParams.id);
+  const projectId = resolvedParams.id;
   
-  if (isNaN(projectId)) {
+  if (!projectId) {
     notFound();
   }
 

@@ -7,15 +7,14 @@ import { redirect } from "next/navigation";
 
 async function getOrganizations(userId: string) {
   return await prisma.organization.findMany({
-    where: {
+    where: { 
       members: {
         some: {
-          userId: Number(userId)
+          userId: {
+            equals: userId
+          }
         }
       }
-    },
-    orderBy: {
-      createdAt: "desc"
     },
     include: {
       members: {
@@ -23,6 +22,9 @@ async function getOrganizations(userId: string) {
           user: true
         }
       }
+    },
+    orderBy: {
+      createdAt: "desc"
     }
   });
 }

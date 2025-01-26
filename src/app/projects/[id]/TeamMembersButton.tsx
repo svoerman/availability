@@ -9,7 +9,7 @@ import { Users } from 'lucide-react';
 interface Props {
   project: Project & { 
     members: User[]; 
-    organizationId: number;
+    organizationId: number | null;
   };
 }
 

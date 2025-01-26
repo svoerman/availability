@@ -189,7 +189,7 @@ export async function GET(request: Request) {
 
     // Get all members of the project
     const project = await prisma.project.findUnique({
-      where: { id: Number(projectId) },
+      where: { id: projectId },
       include: {
         members: {
           select: { id: true }

@@ -120,8 +120,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const projectId = parseInt(request.nextUrl.pathname.split('/')[3]);
-    if (isNaN(projectId)) {
+    const projectId = request.nextUrl.pathname.split('/')[3];
+    if (!projectId) {
       return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 

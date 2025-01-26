@@ -63,7 +63,7 @@ export function CreateProjectForm({ organization }: Props) {
         }),
       });
 
-      const responseData = await response.json().catch(() => null);
+      const responseData = await response.json();
       
       if (!response.ok) {
         throw new Error(
@@ -78,7 +78,7 @@ export function CreateProjectForm({ organization }: Props) {
       }
 
       toast.success("Project created successfully");
-      router.push(`/organizations/${organization.id}/projects/${responseData.id}`);
+      router.push(`/projects/${responseData.id}`);
       router.refresh();
     } catch (error) {
       console.error("Failed to create project:", error);

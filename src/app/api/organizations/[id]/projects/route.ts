@@ -16,13 +16,8 @@ export async function POST(
   context: { params: { id: string } }
 ) {
   try {
-    const organizationId = Number(context.params.id);
-    if (isNaN(organizationId)) {
-      return NextResponse.json(
-        { error: "Invalid organization ID" },
-        { status: 400 }
-      );
-    }
+    // Get organization ID from URL
+    const organizationId = context.params.id;
 
     const session = await auth();
     if (!session?.user?.email) {
@@ -128,13 +123,8 @@ export async function GET(
   context: { params: { id: string } }
 ) {
   try {
-    const organizationId = Number(context.params.id);
-    if (isNaN(organizationId)) {
-      return NextResponse.json(
-        { error: "Invalid organization ID" },
-        { status: 400 }
-      );
-    }
+    // Get organization ID from URL
+    const organizationId = context.params.id;
 
     const session = await auth();
     if (!session?.user?.email) {

@@ -10,15 +10,15 @@ type Props = {
 };
 
 type Availability = {
-  id: number;
-  userId: number;
+  id: string;
+  userId: string;
   date: string;
   dayPart: DayPart;
   status: Status;
 };
 
 type CellPosition = {
-  userId: number;
+  userId: string;
   date: Date;
   dayPart: DayPart;
 };
@@ -97,7 +97,7 @@ export default function AvailabilityGrid({ project }: Props) {
     fetchAvailability();
   }, [project.id]);
 
-  const getAvailability = useCallback((userId: number, date: Date, dayPart: DayPart) => {
+  const getAvailability = useCallback((userId: string, date: Date, dayPart: DayPart) => {
     const existingAvailability = availabilityData.find(
       (a) =>
         a.userId === userId &&
@@ -120,7 +120,7 @@ export default function AvailabilityGrid({ project }: Props) {
   }, [projectStartDate]);
 
   const updateAvailability = useCallback(async (
-    userId: number,
+    userId: string,
     date: Date,
     dayPart: DayPart,
     currentStatus: Status,
@@ -214,7 +214,7 @@ export default function AvailabilityGrid({ project }: Props) {
     setCurrentWeekStart(startOfWeek(new Date()));
   };
 
-  const handleMouseDown = (userId: number, date: Date, dayPart: DayPart) => {
+  const handleMouseDown = (userId: string, date: Date, dayPart: DayPart) => {
     if (!isWithinProjectDates(date)) return;
     
     setIsDragging(true);
@@ -222,7 +222,7 @@ export default function AvailabilityGrid({ project }: Props) {
     setSelectedCells([{ userId, date, dayPart }]);
   };
 
-  const handleMouseEnter = (userId: number, date: Date, dayPart: DayPart) => {
+  const handleMouseEnter = (userId: string, date: Date, dayPart: DayPart) => {
     if (!isDragging || !selectionStart || !isWithinProjectDates(date)) return;
 
     const startDate = selectionStart.date;
@@ -424,7 +424,7 @@ export default function AvailabilityGrid({ project }: Props) {
     return () => window.removeEventListener('keypress', handleKeyPress);
   }, [selectedCells, updateSelectedCells]);
 
-  const isCellSelected = (userId: number, date: Date, dayPart: DayPart) => {
+  const isCellSelected = (userId: string, date: Date, dayPart: DayPart) => {
     return selectedCells.some(
       cell =>
         cell.userId === userId &&
@@ -433,7 +433,7 @@ export default function AvailabilityGrid({ project }: Props) {
     );
   };
 
-  const handleCellClick = async (userId: number, date: Date, dayPart: DayPart) => {
+  const handleCellClick = async (userId: string, date: Date, dayPart: DayPart) => {
     if (!isWithinProjectDates(date)) return;
     
     const currentStatus = getAvailability(userId, date, dayPart);

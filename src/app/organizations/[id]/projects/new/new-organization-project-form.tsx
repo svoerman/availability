@@ -40,7 +40,7 @@ export default function NewOrganizationProjectForm({ organization }: Props) {
 
       const project = await response.json();
       toast.success('Project created successfully');
-      router.push(`/organizations/${organization.id}/projects/${project.id}`);
+      router.push(`/projects/${project.id}`);
       router.refresh();
     } catch (error) {
       console.error('Failed to create project:', error);

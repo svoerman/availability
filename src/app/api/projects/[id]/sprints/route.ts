@@ -11,8 +11,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const projectId = parseInt(request.nextUrl.pathname.split('/')[3]);
-    if (isNaN(projectId)) {
+    const projectId = request.nextUrl.pathname.split('/')[3];
+    if (!projectId || typeof projectId !== 'string') {
       return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 
@@ -35,8 +35,8 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const projectId = parseInt(request.nextUrl.pathname.split('/')[3]);
-    if (isNaN(projectId)) {
+    const projectId = request.nextUrl.pathname.split('/')[3];
+    if (!projectId || typeof projectId !== 'string') {
       return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 
@@ -65,8 +65,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const projectId = parseInt(request.nextUrl.pathname.split('/')[3]);
-    if (isNaN(projectId)) {
+    const projectId = request.nextUrl.pathname.split('/')[3];
+    if (!projectId || typeof projectId !== 'string') {
       return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 

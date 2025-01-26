@@ -32,7 +32,7 @@ export default async function NewProjectPage({ params }: Props) {
   }
 
   const organization = await prisma.organization.findUnique({
-    where: { id: Number(params.id) },
+    where: { id: params.id },
     include: {
       members: {
         where: { userId: user.id },

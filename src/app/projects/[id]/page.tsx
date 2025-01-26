@@ -15,8 +15,8 @@ type Props = {
   searchParams: Promise<{ [key: string]: string | undefined }>
 }
 
-async function getProjectData(projectId: number) {
-  if (isNaN(projectId)) {
+async function getProjectData(projectId: string) {
+  if (!projectId) {
     console.error('Invalid project ID:', projectId);
     return null;
   }
@@ -41,7 +41,7 @@ async function getProjectData(projectId: number) {
   }
 }
 
-async function verifyUserAccess(projectId: number, userEmail: string) {
+async function verifyUserAccess(projectId: string, userEmail: string) {
   const user = await prisma.user.findUnique({
     where: { email: userEmail },
     include: {
@@ -69,7 +69,7 @@ export async function generateMetadata(
   { params }: Props
 ): Promise<Metadata> {
   const resolvedParams = await params;
-  const projectId = parseInt(resolvedParams.id);
+  const projectId = resolvedParams.id;
   const project = await getProjectData(projectId);
 
   if (!project) {
@@ -95,9 +95,9 @@ export default async function ProjectPage({ params }: Props) {
   }
 
   try {
-    const projectId = parseInt(resolvedParams.id);
+    const projectId = resolvedParams.id;
     
-    if (isNaN(projectId)) {
+    if (!projectId) {
       console.error('Invalid project ID in URL:', resolvedParams.id);
       notFound();
     }
@@ -127,7 +127,7 @@ export default async function ProjectPage({ params }: Props) {
                 </Button>
               </Link>
               {project.organizationId && (
-                <TeamMembersButton project={project as Project & { members: User[]; organizationId: number }} />
+                <TeamMembersButton project={project} />
               )}
               <ProjectSettingsButton project={project} />
             </div>

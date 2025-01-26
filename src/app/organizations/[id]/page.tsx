@@ -7,12 +7,16 @@ import Link from "next/link";
 import { UserRole } from "@prisma/client";
 
 async function getOrganization(id: string, userId: string) {
+  if (!id || !userId) {
+    return null;
+  }
+
   const organization = await prisma.organization.findUnique({
     where: { 
-      id: Number(id),
+      id,
       members: {
         some: {
-          userId: Number(userId)
+          userId
         }
       }
     },
@@ -27,7 +31,7 @@ async function getOrganization(id: string, userId: string) {
   });
 
   if (!organization) {
-    notFound();
+    return null;
   }
 
   // Check if user is admin or owner
@@ -41,9 +45,9 @@ async function getOrganization(id: string, userId: string) {
 }
 
 export default async function OrganizationPage({
-  params,
+  params: paramsPromise,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const session = await auth();
   
@@ -51,7 +55,12 @@ export default async function OrganizationPage({
     redirect("/login");
   }
 
+  const params = await paramsPromise;
   const organization = await getOrganization(params.id, session.user.id);
+  
+  if (!organization) {
+    notFound();
+  }
 
   return (
     <div className="container mx-auto py-8">

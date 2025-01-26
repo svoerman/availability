@@ -135,8 +135,8 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid organization ID' }, { status: 400 });
     }
 
-    const organizationId = parseInt(lastPart);
-    if (isNaN(organizationId)) {
+    const organizationId = lastPart;
+    if (!organizationId) {
       return NextResponse.json({ error: 'Invalid organization ID' }, { status: 400 });
     }
 
@@ -199,8 +199,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const organizationId = Number(params.id);
-    if (isNaN(organizationId)) {
+    const organizationId = params.id;
+    if (!organizationId) {
       return NextResponse.json({ error: 'Invalid organization ID' }, { status: 400 });
     }
 
@@ -262,8 +262,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const organizationId = Number(params.id);
-    if (isNaN(organizationId)) {
+    const organizationId = params.id;
+    if (!organizationId) {
       return NextResponse.json({ error: 'Invalid organization ID' }, { status: 400 });
     }
 

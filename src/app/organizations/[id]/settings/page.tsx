@@ -19,14 +19,16 @@ interface OrganizationWithMembers extends Organization {
 async function getOrganization(id: string, userId: string): Promise<OrganizationWithMembers> {
   const organization = await prisma.organization.findUnique({
     where: { 
-      id: Number(id)
+      id,
+      members: {
+        some: {
+          userId,
+          role: { in: [UserRole.ADMIN, UserRole.OWNER] }
+        }
+      }
     },
     include: {
       members: {
-        where: {
-          userId: Number(userId),
-          role: { in: [UserRole.ADMIN, UserRole.OWNER] }
-        },
         include: {
           user: true
         }
@@ -42,9 +44,9 @@ async function getOrganization(id: string, userId: string): Promise<Organization
 }
 
 export default async function OrganizationSettingsPage({
-  params,
+  params: paramsPromise,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const session = await auth();
   
@@ -52,7 +54,12 @@ export default async function OrganizationSettingsPage({
     redirect("/login");
   }
 
+  const params = await paramsPromise;
   const organization = await getOrganization(params.id, session.user.id);
+
+  if (!organization) {
+    notFound();
+  }
 
   return (
     <div className="container mx-auto py-8">

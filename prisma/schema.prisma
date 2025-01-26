@@ -11,38 +11,46 @@ datasource db {
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
-  name          String
-  email         String         @unique  // Now required
-  password      String?        // Nullable because OAuth users won't have a password
-  emailVerified DateTime?
-  image         String?        // For OAuth provider avatars
-  accounts      Account[]      // For OAuth accounts
-  sessions      Session[]      // For managing sessions
-  availability  Availability[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  projects      Project[]      @relation("ProjectMembers")
-  organizations OrganizationMember[]
+  id              String          @id @default(cuid())
+  name            String
+  email           String         @unique  // Now required
+  password        String?        // Nullable because OAuth users won't have a password
+  emailVerified   DateTime?
+  image           String?        // For OAuth provider avatars
+  accounts        Account[]      // For OAuth accounts
+  sessions        Session[]      // For managing sessions
+  availability    Availability[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  projects        Project[]      @relation("ProjectMembers")
+  createdProjects Project[]      @relation("CreatedProjects")
+  organizations   OrganizationMember[]
+
+  @@index([email])
 }
 
 model Project {
-  id             Int           @id @default(autoincrement())
+  id             String        @id @default(cuid())
   name           String
   description    String?
   startDate      DateTime
   sprintStartDay Int           @default(1) // 1-7 representing Monday-Sunday
   members        User[]        @relation("ProjectMembers")
   organization   Organization? @relation(fields: [organizationId], references: [id])
-  organizationId Int?
+  organizationId String?
   sprints        Sprint[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdById    String
+  createdBy      User         @relation("CreatedProjects", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([createdById])
 }
 
 model Availability {
-  id        Int      @id @default(autoincrement())
-  userId    Int
+  id        String   @id @default(cuid())
+  userId    String
   user      User     @relation(fields: [userId], references: [id])
   date      DateTime
   dayPart   DayPart
@@ -51,12 +59,14 @@ model Availability {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, date, dayPart])
+  @@index([userId])
+  @@index([date])
 }
 
 // NextAuth.js models
 model Account {
   id                String  @id @default(cuid())
-  userId            Int
+  userId            String
   type              String
   provider          String
   providerAccountId String
@@ -71,14 +81,17 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique
-  userId       Int
+  userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -90,37 +103,43 @@ model VerificationToken {
 }
 
 model Organization {
-  id          Int       @id @default(autoincrement())
+  id          String    @id @default(cuid())
   name        String
   description String?
   members     OrganizationMember[]
   projects    Project[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([name])
 }
 
 model OrganizationMember {
-  id             Int          @id @default(autoincrement())
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  organizationId Int
-  user           User         @relation(fields: [userId], references: [id])
-  userId         Int
-  role           UserRole     @default(MEMBER)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id             String       @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  role           UserRole    @default(MEMBER)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId])
 }
 
 model Sprint {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(cuid())
   startDate DateTime
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId Int
+  projectId String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([projectId, startDate])
+  @@index([projectId])
+  @@index([startDate])
 }
 
 enum DayPart {

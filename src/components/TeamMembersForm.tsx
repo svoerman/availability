@@ -11,9 +11,9 @@ import { useFormSubmit } from '@/hooks/useFormSubmit';
 
 interface Props {
   project: {
-    id: number;
+    id: string;
     name: string;
-    organizationId: number;
+    organizationId: number | null;
     members: { id: number; name: string; email: string }[];
   };
   open: boolean;
