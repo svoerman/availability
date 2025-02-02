@@ -8,13 +8,15 @@ import { cn } from '@/lib/utils';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useFormSubmit } from '@/hooks/useFormSubmit';
+import { Command as CommandPrimitive } from "cmdk";
+import { Dialog } from "@radix-ui/react-dialog";
 
 interface Props {
   project: {
     id: string;
     name: string;
-    organizationId: number | null;
-    members: { id: number; name: string; email: string }[];
+    organizationId: string | null;
+    members: { id: string; name: string; email: string }[];
   };
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -24,7 +26,7 @@ export default function TeamMembersForm({ project, open, onOpenChange }: Props) 
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [openCombobox, setOpenCombobox] = useState(false);
-  const [organizationMembers, setOrganizationMembers] = useState<Array<{ id: number; name: string; email: string }>>([]);
+  const [organizationMembers, setOrganizationMembers] = useState<Array<{ id: string; name: string; email: string }>>([]);
   const [isPending, startTransition] = useTransition();
 
   const { submit, isSubmitting, error, success, setError } = useFormSubmit({
@@ -89,66 +91,52 @@ export default function TeamMembersForm({ project, open, onOpenChange }: Props) 
       error={error}
       success={success}
     >
-      <form onSubmit={handleSubmit}>
-        <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={openCombobox}
-              className="w-full justify-between"
-            >
-              {selectedUserId ? 
-                availableMembers.find(user => user.id.toString() === selectedUserId)?.name : 
-                "Select member..."}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[400px] p-0">
-            <Command>
-              <CommandInput
-                placeholder="Search members..."
-                value={searchTerm}
-                onValueChange={setSearchTerm}
-              />
-              <CommandList>
-                <CommandEmpty>No members found.</CommandEmpty>
-                <CommandGroup>
-                  {isPending ? (
-                    <div className="p-4 text-sm text-gray-500">Loading members...</div>
-                  ) : (
-                    availableMembers
-                      .filter(user => 
-                        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-                      )
-                      .map((user) => (
-                        <CommandItem
-                          key={user.id}
-                          value={user.name.toLowerCase()}
-                          onSelect={() => {
-                            setSelectedUserId(user.id.toString());
-                            setOpenCombobox(false);
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedUserId === user.id.toString() ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          <div>
-                            <div>{user.name}</div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
-                          </div>
-                        </CommandItem>
-                      ))
-                  )}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+      <form onSubmit={handleSubmit} className="mt-4">
+        <div className="relative">
+          <Command className="rounded-lg border shadow-md overflow-hidden">
+            <CommandInput 
+              placeholder="Search members..." 
+              value={searchTerm}
+              onValueChange={setSearchTerm}
+              className="border-none focus:ring-0"
+            />
+            <CommandList className="max-h-[200px] overflow-auto">
+              <CommandEmpty className="py-6 text-center text-sm">No members found.</CommandEmpty>
+              <CommandGroup>
+                {isPending ? (
+                  <div className="p-4 text-sm text-gray-500 text-center">Loading members...</div>
+                ) : (
+                  availableMembers
+                    .filter(user => 
+                      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+                    )
+                    .map((user) => (
+                      <CommandItem
+                        key={user.id}
+                        onSelect={() => {
+                          setSelectedUserId(user.id);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 cursor-pointer"
+                      >
+                        <Check
+                          className={cn(
+                            "h-4 w-4 flex-shrink-0",
+                            selectedUserId === user.id ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        <div className="flex-1 overflow-hidden">
+                          <div className="font-medium truncate">{user.name}</div>
+                          <div className="text-sm text-gray-500 truncate">{user.email}</div>
+                        </div>
+                      </CommandItem>
+                    ))
+                )}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </div>
+
         <Button 
           type="submit" 
           className="w-full mt-4"
@@ -156,22 +144,23 @@ export default function TeamMembersForm({ project, open, onOpenChange }: Props) 
         >
           {isSubmitting ? 'Adding...' : 'Add Member'}
         </Button>
+
         {project.members.length > 0 && (
-          <div className="mt-4">
-            <h3 className="text-sm font-medium mb-2">Current Team Members</h3>
-            <div className="space-y-2">
+          <div className="mt-6">
+            <h3 className="text-sm font-medium mb-3">Current Team Members</h3>
+            <div className="space-y-3">
               {project.members.map((member) => (
-                <div key={member.id} className="flex items-center justify-between">
-                  <div>
-                    <div>{member.name}</div>
-                    <div className="text-sm text-gray-500">{member.email}</div>
+                <div key={member.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                  <div className="overflow-hidden">
+                    <div className="font-medium truncate">{member.name}</div>
+                    <div className="text-sm text-gray-500 truncate">{member.email}</div>
                   </div>
                   <Button
                     variant="destructive"
                     size="sm"
                     onClick={() => submit(`/api/projects/${project.id}/members/${member.id}`, {
                       method: 'DELETE',
-                      data: {}, // Add an empty data object
+                      data: {},
                     })}
                   >
                     Remove

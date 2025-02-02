@@ -99,4 +99,4 @@ export function NavBar() {
       <NavBarContent />
     </Suspense>
   );
-}
+} 

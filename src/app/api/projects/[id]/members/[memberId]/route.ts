@@ -5,10 +5,10 @@ export async function POST(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const segments = url.pathname.split('/');
-    const projectId = Number(segments[segments.length - 3]);
-    const memberId = Number(segments[segments.length - 1]);
+    const projectId = segments[segments.length - 3];
+    const memberId = segments[segments.length - 1];
 
-    if (isNaN(projectId) || isNaN(memberId)) {
+    if (!projectId || !memberId) {
       return NextResponse.json({ error: 'Invalid project or member ID' }, { status: 400 });
     }
 
@@ -33,10 +33,10 @@ export async function DELETE(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const segments = url.pathname.split('/');
-    const projectId = Number(segments[segments.length - 3]);
-    const memberId = Number(segments[segments.length - 1]);
+    const projectId = segments[segments.length - 3];
+    const memberId = segments[segments.length - 1];
 
-    if (isNaN(projectId) || isNaN(memberId)) {
+    if (!projectId || !memberId) {
       return NextResponse.json({ error: 'Invalid project or member ID' }, { status: 400 });
     }
 

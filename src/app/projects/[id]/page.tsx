@@ -25,7 +25,13 @@ async function getProjectData(projectId: string) {
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       include: { 
-        members: true,
+        members: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
         organization: true
       },
     });
