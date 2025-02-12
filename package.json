@@ -45,6 +45,7 @@
     "react-day-picker": "^9.4.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.54.2",
+    "resend": "^4.1.1",
     "rimraf": "^4.4.1",
     "sonner": "^1.7.1",
     "swagger-ui-dist": "^5.18.2",

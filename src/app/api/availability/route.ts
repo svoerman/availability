@@ -208,7 +208,7 @@ export async function GET(request: Request) {
     const availability = await prisma.availability.findMany({
       where: {
         userId: {
-          in: project.members.map((member: { id: number }) => member.id)
+          in: project.members.map(member => member.id)
         }
       },
       include: {
@@ -218,7 +218,8 @@ export async function GET(request: Request) {
 
     return NextResponse.json(availability);
   } catch (error) {
-    console.error('Error fetching availability:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error fetching availability:', errorMessage);
     return NextResponse.json(
       { error: 'Failed to fetch availability' },
       { status: 500 }
@@ -253,20 +254,21 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate userId is a number
-    const userIdNum = Number(userId);
-    if (isNaN(userIdNum)) {
+    // Parse the date string to ensure it's in the correct format
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime())) {
       return NextResponse.json(
-        { error: 'Invalid userId' },
+        { error: 'Invalid date format' },
         { status: 400 }
       );
     }
 
+    // Create or update availability
     const availability = await prisma.availability.upsert({
       where: {
         userId_date_dayPart: {
-          userId: userIdNum,
-          date: new Date(date),
+          userId,
+          date: parsedDate,
           dayPart,
         },
       },
@@ -274,8 +276,8 @@ export async function POST(request: Request) {
         status,
       },
       create: {
-        userId: userIdNum,
-        date: new Date(date),
+        userId,
+        date: parsedDate,
         dayPart,
         status,
       },
@@ -283,7 +285,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(availability);
   } catch (error) {
-    console.error('Error updating availability:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error updating availability:', errorMessage);
     return NextResponse.json(
       { error: 'Failed to update availability' },
       { status: 500 }

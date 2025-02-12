@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { UserRole } from '@prisma/client';
 
 /**
  * @swagger
@@ -209,7 +210,7 @@ export async function POST(request: Request) {
         members: {
           create: {
             userId: user.id,
-            role: 'OWNER',
+            role: UserRole.OWNER,
           },
         },
       },

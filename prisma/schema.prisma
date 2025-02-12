@@ -25,6 +25,7 @@ model User {
   projects        Project[]      @relation("ProjectMembers")
   createdProjects Project[]      @relation("CreatedProjects")
   organizations   OrganizationMember[]
+  sentInvitations Invitation[]   @relation("SentInvitations")
 
   @@index([email])
 }
@@ -108,6 +109,7 @@ model Organization {
   description String?
   members     OrganizationMember[]
   projects    Project[]
+  invitations Invitation[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -127,6 +129,25 @@ model OrganizationMember {
   @@unique([organizationId, userId])
   @@index([userId])
   @@index([organizationId])
+}
+
+model Invitation {
+  id             String       @id @default(cuid())
+  email          String
+  token          String      @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  inviter        User        @relation("SentInvitations", fields: [inviterId], references: [id])
+  inviterId      String
+  status         InvitationStatus @default(PENDING)
+  expiresAt      DateTime
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([email])
+  @@index([token])
+  @@index([organizationId])
+  @@index([inviterId])
 }
 
 model Sprint {
@@ -159,4 +180,11 @@ enum UserRole {
   OWNER
   ADMIN
   MEMBER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REJECTED
 }
