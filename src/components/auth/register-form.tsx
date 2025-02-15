@@ -13,7 +13,21 @@ export function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch("/api/auth/register", {
+      // Get both the invitation token and redirect URL from parameters
+      const searchParams = new URLSearchParams(window.location.search);
+      const invitationToken = searchParams.get('invitation');
+      const redirectPath = searchParams.get('redirect');
+      
+      console.log('Registration params:', { invitationToken, redirectPath });
+      console.log('Registration with invitation token:', invitationToken);
+      
+      // Register the user
+      const url = new URL('/api/auth/register', window.location.origin);
+      if (invitationToken) {
+        url.searchParams.set('invitation', invitationToken);
+      }
+
+      const res = await fetch(url.toString(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -25,19 +39,28 @@ export function RegisterForm() {
         }),
       });
 
-      if (res.ok) {
-        // Sign in the user after successful registration
-        await signIn("credentials", {
-          email,
-          password,
-          redirect: true,
-          callbackUrl: "/projects",
-        });
-      } else {
+      if (!res.ok) {
         const data = await res.json();
         setError(data.error || "Something went wrong");
+        return;
       }
-    } catch {
+
+      const data = await res.json();
+      console.log('Registration response:', data);
+
+      // Sign in the user
+      const signInResult = await signIn("credentials", {
+        email,
+        password,
+        redirect: true,
+        // If we have a redirect path, use that (it will contain the invitation accept URL)
+        // Otherwise use the organizationId from registration or fall back to projects
+        callbackUrl: redirectPath || (data.organizationId 
+          ? `/organizations/${data.organizationId}`
+          : '/projects')
+      });
+    } catch (error) {
+      console.error('Registration error:', error);
       setError("Something went wrong");
     }
   };
@@ -104,7 +127,16 @@ export function RegisterForm() {
       <Button
         type="button"
         variant="outline"
-        onClick={() => signIn("google", { callbackUrl: "/projects" })}
+        onClick={() => {
+          const searchParams = new URLSearchParams(window.location.search);
+          const invitationToken = searchParams.get('invitation');
+          
+          // For Google sign-in, we'll use the state parameter to pass the invitation token
+          signIn("google", { 
+            callbackUrl: '/api/auth/callback/google',
+            state: invitationToken ? JSON.stringify({ invitationToken }) : undefined
+          });
+        }}
         className="w-full"
       >
         <svg className="mr-2 h-4 w-4" aria-hidden="true" viewBox="0 0 24 24">

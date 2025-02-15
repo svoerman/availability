@@ -62,22 +62,128 @@ export const config = {
       }
     })
   ],
+
+
   callbacks: {
+    async signIn({ user, account, profile }) {
+      if (account?.type === 'oauth' && account.provider === 'google') {
+        try {
+          // Check if this is a new user
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email! }
+          });
+
+          if (!existingUser) {
+            // This is a new user, check for invitation in state
+            const state = account.state ? JSON.parse(account.state) : null;
+            const invitationToken = state?.invitationToken;
+
+            if (invitationToken) {
+              // Find the invitation
+              const invitation = await prisma.invitation.findUnique({
+                where: { token: invitationToken },
+                include: { organization: true }
+              });
+
+              if (invitation && invitation.status === 'PENDING') {
+                // Create user and handle invitation in a transaction
+                const result = await prisma.$transaction(async (tx) => {
+                  // Create the user
+                  const newUser = await tx.user.create({
+                    data: {
+                      email: user.email!,
+                      name: user.name || user.email!.split('@')[0],
+                    }
+                  });
+
+                  // Create organization membership
+                  await tx.organizationMember.create({
+                    data: {
+                      organizationId: invitation.organizationId,
+                      userId: newUser.id,
+                      role: 'MEMBER',
+                    },
+                  });
+
+                  // If there's project metadata, add to project
+                  if (invitation.invitationMetadata) {
+                    try {
+                      const metadata = JSON.parse(invitation.invitationMetadata);
+                      if (metadata.projectId) {
+                        await tx.projectMember.create({
+                          data: {
+                            projectId: metadata.projectId,
+                            userId: newUser.id,
+                            role: 'MEMBER',
+                          },
+                        });
+                      }
+                    } catch (e) {
+                      console.error('Error parsing invitation metadata:', e);
+                    }
+                  }
+
+                  // Update invitation status
+                  await tx.invitation.update({
+                    where: { token: invitationToken },
+                    data: { status: 'ACCEPTED' },
+                  });
+
+                  return {
+                    user: newUser,
+                    organizationId: invitation.organizationId,
+                  };
+                });
+
+                // Store the organization ID to use in the session
+                (user as any).organizationId = result.organizationId;
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error in Google sign in:', error);
+        }
+      }
+      return true;
+    },
+
+    async redirect({ url, baseUrl }) {
+      // If we have an organizationId in the URL, redirect to it
+      const parsedUrl = new URL(url, baseUrl);
+      const organizationId = parsedUrl.searchParams.get('organizationId');
+      
+      if (organizationId) {
+        return `/organizations/${organizationId}`;
+      }
+      
+      return url;
+    },
+
     async jwt({ token, user }): Promise<ExtendedJWT> {
       if (user) {
         token.id = user.id;
         token.email = user.email;
+        // Pass through any organizationId from the user
+        if ((user as any).organizationId) {
+          (token as any).organizationId = (user as any).organizationId;
+        }
       }
       return token as ExtendedJWT;
     },
+
     async session({ session, token }): Promise<ExtendedSession> {
+      // Pass through any organizationId from the token
+      if ((token as any).organizationId) {
+        (session as any).organizationId = (token as any).organizationId;
+      }
       if (token) {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
       }
-      return session as ExtendedSession;
-    }
-  },
+      return session;
+    },
+
+  }
 } satisfies NextAuthConfig;
 
 export const { auth, signIn, signOut, handlers } = NextAuth(config);

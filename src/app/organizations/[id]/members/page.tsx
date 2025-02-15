@@ -33,6 +33,10 @@ type OrganizationMember = {
 
 type OrganizationWithMembers = Organization & {
   members: OrganizationMember[];
+  projects: {
+    id: string;
+    name: string;
+  }[];
 };
 
 export default function OrganizationMembersPage() {
@@ -40,6 +44,7 @@ export default function OrganizationMembersPage() {
   const id = params.id as string;
   const [organization, setOrganization] = useState<OrganizationWithMembers | null>(null);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -83,23 +88,45 @@ export default function OrganizationMembersPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: inviteEmail }),
+        body: JSON.stringify({ 
+          email: inviteEmail,
+          projectId: selectedProjectId || undefined
+        }),
       });
 
-      const responseData = await res.json();
-
+      let responseData;
+      try {
+        responseData = await res.json();
+      } catch (e) {
+        console.error('Failed to parse response:', e);
+        toast({
+          title: 'Error',
+          description: 'Failed to send invitation',
+          variant: 'destructive'
+        });
+        setIsLoading(false);
+        return;
+      }
+      
       if (!res.ok) {
-        if (responseData.error === 'Invitation already sent') {
+        if (responseData?.error === 'Invitation already sent') {
           toast({
             title: 'Note',
             description: 'An invitation has already been sent to this email address',
             variant: 'default'
           });
-          setInviteEmail('');
-          setIsInviteDialogOpen(false);
-          return;
+        } else {
+          toast({
+            title: 'Error',
+            description: responseData?.error || 'Failed to send invitation',
+            variant: 'destructive'
+          });
         }
-        throw new Error(responseData.error || 'Failed to send invitation');
+        setInviteEmail('');
+        setSelectedProjectId('');
+        setIsInviteDialogOpen(false);
+        setIsLoading(false);
+        return;
       }
 
       toast({
@@ -108,6 +135,7 @@ export default function OrganizationMembersPage() {
       });
       
       setInviteEmail('');
+      setSelectedProjectId('');
       setIsInviteDialogOpen(false);
       router.refresh();
     } catch (error) {
@@ -139,18 +167,39 @@ export default function OrganizationMembersPage() {
             </DialogHeader>
             <form onSubmit={handleInvite}>
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">
-                    Email Address
-                  </label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="member@example.com"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    required
-                  />
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium">
+                      Email Address
+                    </label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="member@example.com"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="project" className="text-sm font-medium">
+                      Add to Project (Optional)
+                    </label>
+                    <select
+                      id="project"
+                      className="w-full px-3 py-2 border rounded-md text-sm"
+                      value={selectedProjectId}
+                      onChange={(e) => setSelectedProjectId(e.target.value)}
+                    >
+                      <option value="">No project</option>
+                      {organization?.projects.map((project) => (
+                        <option key={project.id} value={project.id}>
+                          {project.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
               <DialogFooter className="mt-4">

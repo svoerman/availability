@@ -171,6 +171,12 @@ export async function GET(
             },
           },
         },
+        projects: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 

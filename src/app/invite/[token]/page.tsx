@@ -79,7 +79,8 @@ export default function InvitationPage({ params }: Props) {
       if (!res.ok) {
         if (data.error === 'Not authenticated') {
           const resolvedParams = await params;
-          router.push(`/login?redirect=/invite/${resolvedParams.token}`);
+          // Add the invitation token as a parameter
+          router.push(`/login?redirect=/invite/${resolvedParams.token}&invitation=${resolvedParams.token}`);
           return;
         }
         

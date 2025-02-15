@@ -113,7 +113,17 @@ export function LoginForm() {
           type="button"
           variant="outline"
           className="w-full"
-          onClick={() => signIn("google", { callbackUrl: "/" })}
+          onClick={() => {
+            // Check if this is an invitation acceptance flow
+            if (callbackUrl.includes('/invite/')) {
+              // Add from=auth parameter for invitation flows
+              const redirectUrl = new URL(callbackUrl, window.location.origin);
+              redirectUrl.searchParams.set('from', 'auth');
+              signIn("google", { callbackUrl: redirectUrl.toString() });
+            } else {
+              signIn("google", { callbackUrl });
+            }
+          }}
         >
           <svg
             className="mr-2 h-4 w-4"
@@ -135,7 +145,10 @@ export function LoginForm() {
 
         <p className="text-center text-sm text-gray-600">
           Don't have an account?{" "}
-          <a href="/register" className="font-medium text-blue-600 hover:text-blue-500">
+          <a 
+            href={`/register?${searchParams?.toString()}`} 
+            className="font-medium text-blue-600 hover:text-blue-500"
+          >
             Sign up
           </a>
         </p>

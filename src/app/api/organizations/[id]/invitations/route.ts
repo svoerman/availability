@@ -133,9 +133,17 @@ export async function POST(
       );
     }
 
-    const body = await request.json().catch(() => ({}));
+    let body;
+    try {
+      body = await request.json();
+    } catch (e) {
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      );
+    }
     console.log('Invitation request body:', JSON.stringify(body, null, 2));
-    const { email } = body;
+    const { email, projectId } = body;
 
     if (!email || typeof email !== 'string') {
       return NextResponse.json(
@@ -197,6 +205,32 @@ export async function POST(
 
     // Generate invitation token
     const token = randomBytes(32).toString('hex');
+    console.log('Generated token:', token);
+
+    // If a project was selected, verify it exists and user has access
+    if (projectId) {
+      const project = await prisma.project.findFirst({
+        where: {
+          id: projectId,
+          organizationId: params.id
+        }
+      });
+
+      if (!project) {
+        return NextResponse.json(
+          { error: 'Selected project not found or not part of this organization' },
+          { status: 404 }
+        );
+      }
+    }
+
+    console.log('Creating invitation with data:', {
+      email,
+      token,
+      organizationId: params.id,
+      inviterId: user.id,
+      projectId,
+    });
 
     // Create invitation
     const invitation = await prisma.invitation.create({
@@ -206,24 +240,15 @@ export async function POST(
         organizationId: params.id,
         inviterId: user.id,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        invitationMetadata: projectId ? JSON.stringify({ projectId }) : null,
       },
       include: {
         organization: true,
         inviter: true,
       },
-    }) as Invitation & { organization: Organization; inviter: User };
+    });
 
-    console.log('Validation result:', { success: true });
-    if (!true) {
-      console.error('Validation errors:', []);
-      return NextResponse.json(
-        { 
-          error: "Invalid invitation data",
-          details: []
-        },
-        { status: 400 }
-      );
-    }
+    console.log('Invitation created successfully:', invitation);
 
     // Send invitation email
     const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${token}`;
@@ -245,9 +270,28 @@ export async function POST(
 
       console.log('Email send result:', emailResult);
 
+      return new NextResponse(
+        JSON.stringify({ 
+          success: true,
+          invitation: {
+            id: invitation.id,
+            email: invitation.email,
+            organizationId: invitation.organizationId,
+            projectId: projectId || undefined
+          }
+        }),
+        { 
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+
       if (!emailResult?.accepted?.length) {
         console.error('Email send failed - no accepted addresses:', emailResult);
-        throw new Error(`Failed to send email: no accepted addresses. Full response: ${JSON.stringify(emailResult)}`);
+        return new NextResponse(
+          JSON.stringify({ error: 'Failed to send invitation email' }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
       }
 
       console.log('Invitation email sent successfully to:', email);
@@ -260,12 +304,26 @@ export async function POST(
       );
     }
 
-    return NextResponse.json({ success: true });
+    return new NextResponse(
+      JSON.stringify({ 
+        success: true,
+        invitation: {
+          id: invitation.id,
+          email: invitation.email,
+          organizationId: invitation.organizationId,
+          projectId: projectId || undefined
+        }
+      }),
+      { 
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error) {
-    console.error('Error creating invitation:', error);
-    return NextResponse.json(
-      { error: 'Failed to create invitation' },
-      { status: 500 }
+    console.error('Error creating invitation:', error instanceof Error ? error.message : error);
+    return new NextResponse(
+      JSON.stringify({ error: 'Failed to create invitation' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }
