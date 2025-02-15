@@ -214,7 +214,7 @@ export default function AvailabilityGrid({ project }: Props) {
       return updatedAvailability;
     }
     return null;
-  }, [setAvailabilityData, isWithinProjectDates]);
+  }, [setAvailabilityData, isWithinProjectDates, project.id]);
 
   const getStatusColor = (status: Status, date: Date) => {
     if (!isWithinProjectDates(date)) {

@@ -160,7 +160,8 @@ export const config = {
       return url;
     },
 
-    async jwt({ token, user }): Promise<ExtendedJWT> {
+    async jwt({ token, user }) {
+      const extendedToken = token as unknown as ExtendedJWT;
       if (!token) {
         throw new Error('No token provided');
       }
@@ -178,33 +179,41 @@ export const config = {
       }
 
       // Ensure required fields exist
-      if (!token.id || !token.email) {
+      if (!extendedToken.id || !extendedToken.email) {
         throw new Error('Token missing required fields');
       }
 
       return token as ExtendedJWT;
     },
 
-    async session({ session, token }): Promise<ExtendedSession> {
-      if (!token || !session?.user) {
+    async session({ session, token }) {
+      // Type assertion for token
+      const extendedToken = token as unknown as ExtendedJWT;
+      if (!extendedToken || !session?.user) {
         throw new Error('No token or user in session');
       }
 
-      if (!token.id || !token.email) {
+      if (!extendedToken.id || !extendedToken.email) {
         throw new Error('Token missing required fields');
       }
 
       // Pass through any organizationId from the token
-      const tokenWithOrg = token as { organizationId?: string };
+      const tokenWithOrg = extendedToken as unknown as { organizationId?: string };
       if (tokenWithOrg.organizationId) {
         (session as { organizationId?: string }).organizationId = tokenWithOrg.organizationId;
       }
 
-      // Update session with token data
-      session.user.id = token.id;
-      session.user.email = token.email;
+      // Create a new session object with proper typing
+      const extendedSession: ExtendedSession = {
+        ...session,
+        user: {
+          ...session.user,
+          id: extendedToken.id,
+          email: extendedToken.email
+        }
+      };
       
-      return session as ExtendedSession;
+      return extendedSession;
     },
 
   }

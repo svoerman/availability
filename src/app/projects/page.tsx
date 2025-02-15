@@ -114,10 +114,10 @@ export default async function Projects({ searchParams }: Props) {
                   </div>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 mt-4">
                 {project.members.map(member => (
                   <span
-                    key={member.id}
+                    key={member.user.id}
                     className="px-2 py-1 bg-gray-100 rounded-full text-sm"
                   >
                     {member.user.email}
