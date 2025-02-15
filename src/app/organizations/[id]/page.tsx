@@ -11,7 +11,7 @@ async function getOrganization(id: string, userId: string) {
     return null;
   }
 
-  const organization = await prisma.organization.findUnique({
+  const organization = await prisma.organization.findFirst({
     where: { 
       id,
       members: {
@@ -26,7 +26,18 @@ async function getOrganization(id: string, userId: string) {
           user: true
         }
       },
-      projects: true
+      projects: {
+        include: {
+          members: true,
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        }
+      }
     }
   });
 
@@ -38,6 +49,13 @@ async function getOrganization(id: string, userId: string) {
   const userRole = organization.members.find(m => m.user.id === userId)?.role;
   const canManageSettings = userRole === UserRole.ADMIN || userRole === UserRole.OWNER;
 
+  console.log('Organization data:', JSON.stringify(organization, null, 2));
+  console.log('User role:', userRole);
+  console.log('Can manage settings:', canManageSettings);
+
+  console.log('Organization projects:', JSON.stringify(organization.projects, null, 2));
+  console.log('User ID:', userId);
+  
   return {
     ...organization,
     canManageSettings
@@ -50,6 +68,7 @@ export default async function OrganizationPage({
   params: Promise<{ id: string }>;
 }) {
   const session = await auth();
+  console.log('Session:', JSON.stringify(session, null, 2));
   
   if (!session?.user?.id) {
     redirect("/login");
@@ -61,6 +80,10 @@ export default async function OrganizationPage({
   if (!organization) {
     notFound();
   }
+
+  // Get the current user's role in the organization
+  const userMember = organization.members.find(member => member.userId === session.user.id);
+  const isAdminOrOwner = userMember && [UserRole.ADMIN, UserRole.OWNER].includes(userMember.role);
 
   return (
     <div className="container mx-auto py-8">
@@ -89,11 +112,13 @@ export default async function OrganizationPage({
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle>Members</CardTitle>
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/organizations/${organization.id}/members`}>
-                  Manage Members
-                </Link>
-              </Button>
+              {isAdminOrOwner && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/organizations/${organization.id}/members`}>
+                    Manage Members
+                  </Link>
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent>
@@ -141,6 +166,9 @@ export default async function OrganizationPage({
                         {project.description}
                       </p>
                     )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Created by {project.createdBy.name} • {project.members.length} member{project.members.length === 1 ? '' : 's'}
+                    </p>
                   </div>
                   <Button variant="ghost" size="sm" asChild>
                     <Link href={`/projects/${project.id}`}>View</Link>

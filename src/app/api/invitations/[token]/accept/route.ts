@@ -95,6 +95,7 @@ export async function POST(
 
       return {
         membership,
+        organizationId: invitation.organizationId,
         organization: invitation.organization,
       };
     });

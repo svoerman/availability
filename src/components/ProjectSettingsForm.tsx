@@ -20,9 +20,10 @@ export default function ProjectSettingsForm({ project, open, onOpenChange }: Pro
     await submit(`/api/projects/${project.id}`, {
       method: 'PATCH',
       data: {
-        ...data,
+        name: data.name,
+        description: data.description,
         startDate: new Date(data.startDate).toISOString(),
-        organizationId: Number(data.organizationId)
+        sprintStartDay: data.sprintStartDay
       }
     });
   };

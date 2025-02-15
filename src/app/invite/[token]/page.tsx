@@ -31,6 +31,13 @@ export default function InvitationPage({ params }: Props) {
   const router = useRouter();
   const { toast } = useToast();
 
+  // Function to check if we're coming from auth
+  const isFromAuth = () => {
+    if (typeof window === 'undefined') return false;
+    const searchParams = new URLSearchParams(window.location.search);
+    return searchParams.get('from') === 'auth';
+  };
+
   useEffect(() => {
     const fetchInvitation = async () => {
       const resolvedParams = await params;
@@ -39,6 +46,11 @@ export default function InvitationPage({ params }: Props) {
         if (!res.ok) throw new Error('Failed to fetch invitation');
         const data = await res.json();
         setInvitation(data);
+
+        // If we're coming from auth and the invitation is valid, accept it automatically
+        if (isFromAuth() && data.status === 'PENDING') {
+          handleAccept();
+        }
       } catch (error) {
         console.error('Error fetching invitation:', error);
         toast({
@@ -62,15 +74,25 @@ export default function InvitationPage({ params }: Props) {
         method: 'POST',
       });
 
-      if (!res.ok) throw new Error('Failed to accept invitation');
+      const data = await res.json();
+      
+      if (!res.ok) {
+        if (data.error === 'Not authenticated') {
+          const resolvedParams = await params;
+          router.push(`/login?redirect=/invite/${resolvedParams.token}`);
+          return;
+        }
+        
+        throw new Error(data.error || 'Failed to accept invitation');
+      }
 
       toast({
         title: 'Success',
         description: 'You have successfully joined the organization',
       });
 
-      // Redirect to the organization page
-      router.push(`/organizations/${invitation?.organization.id}`);
+      // Redirect to the organization page using the organization ID from the response
+      router.push(`/organizations/${data.organizationId}`);
     } catch (error) {
       console.error('Error accepting invitation:', error);
       toast({

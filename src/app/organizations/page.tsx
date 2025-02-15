@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { UserRole } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateOrganizationDialog } from "./create-organization-dialog";
@@ -10,16 +11,25 @@ async function getOrganizations(userId: string) {
     where: { 
       members: {
         some: {
-          userId: {
-            equals: userId
-          }
+          userId: userId
         }
       }
     },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      description: true,
       members: {
-        include: {
-          user: true
+        select: {
+          userId: true,
+          role: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
         }
       }
     },
@@ -36,7 +46,9 @@ export default async function OrganizationsPage() {
     redirect("/login");
   }
 
-  const organizations = await getOrganizations(session.user.id);
+  // Store session user for use in the component
+  const sessionUser = session.user;
+  const organizations = await getOrganizations(sessionUser.id);
 
   return (
     <div className="container mx-auto py-8">
@@ -57,13 +69,18 @@ export default async function OrganizationsPage() {
                 <div className="text-sm text-muted-foreground">
                   {org.members.length} member{org.members.length === 1 ? '' : 's'}
                 </div>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  asChild
-                >
-                  <a href={`/organizations/${org.id}`}>View Details</a>
-                </Button>
+                {/* Only show link if user has a role in the organization */}
+                {org.members.some(member => 
+                  member.userId === sessionUser.id
+                ) && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    asChild
+                  >
+                    <a href={`/organizations/${org.id}`}>View Details</a>
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -1,20 +1,93 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { Resend } from 'resend';
 import { randomBytes } from 'crypto';
 import { UserRole } from '@prisma/client';
 import { Invitation, Organization, User } from '@prisma/client';
+import { createTransport } from 'nodemailer';
+import { isEmail } from '@/lib/utils'; // Fix email validation import
 
-if (!process.env.RESEND_API_KEY) {
-  throw new Error('RESEND_API_KEY is not set in environment variables');
+interface SMTPConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  auth: {
+    user: string;
+    pass: string;
+  };
+}
+
+interface SMTPConfigValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+function validateSMTPConfig(config: SMTPConfig): SMTPConfigValidationResult {
+  const errors: string[] = [];
+
+  if (!config.host) {
+    errors.push('SMTP host is required');
+  }
+
+  if (!config.port || typeof config.port !== 'number') {
+    errors.push('SMTP port is required and must be a number');
+  }
+
+  if (typeof config.secure !== 'boolean') {
+    errors.push('SMTP secure must be a boolean');
+  }
+
+  if (!config.auth || !config.auth.user || !config.auth.pass) {
+    errors.push('SMTP auth user and pass are required');
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+const smtpConfig: SMTPConfig = {
+  host: process.env.SMTP_HOST!,
+  port: Number(process.env.SMTP_PORT!),
+  secure: process.env.SMTP_SECURE === 'true',
+  auth: {
+    user: process.env.SMTP_USER!,
+    pass: process.env.SMTP_PASSWORD!,
+  },
+};
+
+const smtpConfigValidationResult = validateSMTPConfig(smtpConfig);
+
+if (!smtpConfigValidationResult.valid) {
+  throw new Error(`Invalid SMTP configuration: ${smtpConfigValidationResult.errors.join(', ')}`);
+}
+
+const transporter = createTransport(smtpConfig);
+
+if (!process.env.SMTP_HOST) {
+  throw new Error('SMTP_HOST is not set in environment variables');
+}
+
+if (!process.env.SMTP_PORT) {
+  throw new Error('SMTP_PORT is not set in environment variables');
+}
+
+if (!process.env.SMTP_SECURE) {
+  throw new Error('SMTP_SECURE is not set in environment variables');
+}
+
+if (!process.env.SMTP_USER) {
+  throw new Error('SMTP_USER is not set in environment variables');
+}
+
+if (!process.env.SMTP_PASSWORD) {
+  throw new Error('SMTP_PASSWORD is not set in environment variables');
 }
 
 if (!process.env.NEXT_PUBLIC_APP_URL) {
   throw new Error('NEXT_PUBLIC_APP_URL is not set in environment variables');
 }
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(
   request: Request,
@@ -61,12 +134,33 @@ export async function POST(
     }
 
     const body = await request.json().catch(() => ({}));
+    console.log('Invitation request body:', JSON.stringify(body, null, 2));
     const { email } = body;
 
     if (!email || typeof email !== 'string') {
       return NextResponse.json(
         { error: 'Invalid request: email is required' },
         { status: 400 }
+      );
+    }
+
+    if (!isEmail(email)) {
+      return NextResponse.json(
+        { error: "Invalid email format" },
+        { status: 400 }
+      );
+    }
+
+    console.log('Organization ID:', params.id);
+    const organization = await prisma.organization.findUnique({
+      where: { id: params.id },
+    });
+
+    if (!organization) {
+      console.error('Organization not found:', params.id);
+      return NextResponse.json(
+        { error: "Organization not found" },
+        { status: 404 }
       );
     }
 
@@ -119,12 +213,24 @@ export async function POST(
       },
     }) as Invitation & { organization: Organization; inviter: User };
 
+    console.log('Validation result:', { success: true });
+    if (!true) {
+      console.error('Validation errors:', []);
+      return NextResponse.json(
+        { 
+          error: "Invalid invitation data",
+          details: []
+        },
+        { status: 400 }
+      );
+    }
+
     // Send invitation email
     const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${token}`;
     
     try {
       console.log('Attempting to send invitation email to:', email);
-      const emailResult = await resend.emails.send({
+      const emailResult = await transporter.sendMail({
         from: 'Availability <agile@agile.pixelgilde.nl>',
         to: email,
         subject: `Invitation to join ${invitation.organization.name}`,
@@ -139,9 +245,9 @@ export async function POST(
 
       console.log('Email send result:', emailResult);
 
-      if (!emailResult?.data?.id) {
-        console.error('Email send failed - no ID returned:', emailResult);
-        throw new Error(`Failed to send email: no email ID returned. Full response: ${JSON.stringify(emailResult?.data)}`);
+      if (!emailResult?.accepted?.length) {
+        console.error('Email send failed - no accepted addresses:', emailResult);
+        throw new Error(`Failed to send email: no accepted addresses. Full response: ${JSON.stringify(emailResult)}`);
       }
 
       console.log('Invitation email sent successfully to:', email);

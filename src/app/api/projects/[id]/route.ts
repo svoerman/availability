@@ -131,6 +131,16 @@ export async function PATCH(
       return NextResponse.json({ error: 'Project name is required' }, { status: 400 });
     }
 
+    // First get the existing project to preserve organization
+    const existingProject = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { organizationId: true }
+    });
+
+    if (!existingProject) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
     const updated = await prisma.project.update({
       where: {
         id: projectId
@@ -140,7 +150,13 @@ export async function PATCH(
         description: data.description,
         startDate: new Date(data.startDate),
         sprintStartDay: data.sprintStartDay,
-        organizationId: data.organizationId
+        // Preserve the existing organizationId
+        organizationId: existingProject.organizationId
+      },
+      include: {
+        organization: true,
+        members: true,
+        createdBy: true
       }
     });
     

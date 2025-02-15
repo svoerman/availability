@@ -49,8 +49,14 @@ export default function OrganizationMembersPage() {
   const fetchOrganization = useCallback(async () => {
     try {
       const res = await fetch(`/api/organizations/${id}`);
-      if (!res.ok) throw new Error('Failed to fetch organization');
       const data = await res.json();
+      if (!res.ok) {
+        if (data.error === 'Unauthorized') {
+          router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
+          return;
+        }
+        throw new Error(data.error || 'Failed to fetch organization');
+      }
       setOrganization(data);
     } catch (error) {
       console.error('Error fetching organization:', error);
@@ -80,7 +86,21 @@ export default function OrganizationMembersPage() {
         body: JSON.stringify({ email: inviteEmail }),
       });
 
-      if (!res.ok) throw new Error('Failed to send invitation');
+      const responseData = await res.json();
+
+      if (!res.ok) {
+        if (responseData.error === 'Invitation already sent') {
+          toast({
+            title: 'Note',
+            description: 'An invitation has already been sent to this email address',
+            variant: 'default'
+          });
+          setInviteEmail('');
+          setIsInviteDialogOpen(false);
+          return;
+        }
+        throw new Error(responseData.error || 'Failed to send invitation');
+      }
 
       toast({
         title: 'Success',

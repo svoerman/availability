@@ -84,19 +84,20 @@ export async function POST(
         organizationId,
         createdById: user.id,
         members: {
-          connect: {
-            id: user.id,
-          },
+          connect: [{
+            id: user.id
+          }]
         },
       },
       include: {
-        members: {
+        members: true,
+        createdBy: {
           select: {
             id: true,
             name: true,
-            email: true,
-          },
-        },
+            email: true
+          }
+        }
       },
     });
 
@@ -165,13 +166,14 @@ export async function GET(
         organizationId,
       },
       include: {
+        members: true,
         createdBy: {
           select: {
             id: true,
             name: true,
-            email: true,
-          },
-        },
+            email: true
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc',

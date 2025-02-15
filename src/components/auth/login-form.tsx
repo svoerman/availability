@@ -18,7 +18,7 @@ function SubmitButton() {
 
 export function LoginForm() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams?.get("callbackUrl") ?? "/projects";
+  const callbackUrl = searchParams?.get("redirect") ?? searchParams?.get("callbackUrl") ?? "/projects";
   const [error, setError] = useState<string | undefined>(undefined);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -32,11 +32,21 @@ export function LoginForm() {
         email,
         password,
         redirect: false,
-        callbackUrl,
       });
 
       if (result?.error) {
         setError("Invalid email or password");
+      } else if (result?.ok) {
+        // Check if this is an invitation acceptance flow
+        if (callbackUrl.includes('/invite/')) {
+          // Automatically redirect to the invitation page with from=auth parameter
+          const redirectUrl = new URL(callbackUrl, window.location.origin);
+          redirectUrl.searchParams.set('from', 'auth');
+          window.location.href = redirectUrl.toString();
+        } else {
+          // Regular login flow
+          window.location.href = callbackUrl;
+        }
       }
     } catch {
       setError("Something went wrong");
