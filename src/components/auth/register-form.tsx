@@ -49,7 +49,7 @@ export function RegisterForm() {
       console.log('Registration response:', data);
 
       // Sign in the user
-      const signInResult = await signIn("credentials", {
+      await signIn("credentials", {
         email,
         password,
         redirect: true,

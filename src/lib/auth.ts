@@ -65,7 +65,7 @@ export const config = {
 
 
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile: _profile }) {
       if (account?.type === 'oauth' && account.provider === 'google') {
         try {
           // Check if this is a new user
@@ -75,7 +75,7 @@ export const config = {
 
           if (!existingUser) {
             // This is a new user, check for invitation in state
-            const state = account.state ? JSON.parse(account.state) : null;
+            const state = account.state && typeof account.state === 'string' ? JSON.parse(account.state) : null;
             const invitationToken = state?.invitationToken;
 
             if (invitationToken) {
@@ -110,12 +110,13 @@ export const config = {
                     try {
                       const metadata = JSON.parse(invitation.invitationMetadata);
                       if (metadata.projectId) {
-                        await tx.projectMember.create({
+                        await tx.user.update({
+                          where: { id: newUser.id },
                           data: {
-                            projectId: metadata.projectId,
-                            userId: newUser.id,
-                            role: 'MEMBER',
-                          },
+                            projects: {
+                              connect: { id: metadata.projectId }
+                            }
+                          }
                         });
                       }
                     } catch (e) {
@@ -136,7 +137,7 @@ export const config = {
                 });
 
                 // Store the organization ID to use in the session
-                (user as any).organizationId = result.organizationId;
+                (user as { organizationId?: string }).organizationId = result.organizationId;
               }
             }
           }
@@ -164,8 +165,9 @@ export const config = {
         token.id = user.id;
         token.email = user.email;
         // Pass through any organizationId from the user
-        if ((user as any).organizationId) {
-          (token as any).organizationId = (user as any).organizationId;
+        const userWithOrg = user as { organizationId?: string };
+        if (userWithOrg.organizationId) {
+          (token as { organizationId?: string }).organizationId = userWithOrg.organizationId;
         }
       }
       return token as ExtendedJWT;
@@ -173,8 +175,9 @@ export const config = {
 
     async session({ session, token }): Promise<ExtendedSession> {
       // Pass through any organizationId from the token
-      if ((token as any).organizationId) {
-        (session as any).organizationId = (token as any).organizationId;
+      const tokenWithOrg = token as { organizationId?: string };
+      if (tokenWithOrg.organizationId) {
+        (session as { organizationId?: string }).organizationId = tokenWithOrg.organizationId;
       }
       if (token) {
         session.user.id = token.id as string;

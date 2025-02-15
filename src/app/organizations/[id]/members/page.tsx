@@ -71,7 +71,7 @@ export default function OrganizationMembersPage() {
         variant: 'destructive',
       });
     }
-  }, [id, toast]);
+  }, [id, toast, router]);
 
   useEffect(() => {
     fetchOrganization();

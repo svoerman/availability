@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,35 +38,7 @@ export default function InvitationPage({ params }: Props) {
     return searchParams.get('from') === 'auth';
   };
 
-  useEffect(() => {
-    const fetchInvitation = async () => {
-      const resolvedParams = await params;
-      try {
-        const res = await fetch(`/api/invitations/${resolvedParams.token}`);
-        if (!res.ok) throw new Error('Failed to fetch invitation');
-        const data = await res.json();
-        setInvitation(data);
-
-        // If we're coming from auth and the invitation is valid, accept it automatically
-        if (isFromAuth() && data.status === 'PENDING') {
-          handleAccept();
-        }
-      } catch (error) {
-        console.error('Error fetching invitation:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load invitation details',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchInvitation();
-  }, [params, toast]);
-
-  const handleAccept = async () => {
+  const handleAccept = useCallback(async () => {
     setIsAccepting(true);
     try {
       const resolvedParams = await params;
@@ -109,7 +81,35 @@ export default function InvitationPage({ params }: Props) {
     } finally {
       setIsAccepting(false);
     }
-  };
+  }, [params, router, toast]);
+
+  useEffect(() => {
+    const fetchInvitation = async () => {
+      const resolvedParams = await params;
+      try {
+        const res = await fetch(`/api/invitations/${resolvedParams.token}`);
+        if (!res.ok) throw new Error('Failed to fetch invitation');
+        const data = await res.json();
+        setInvitation(data);
+
+        // If we're coming from auth and the invitation is valid, accept it automatically
+        if (isFromAuth() && data.status === 'PENDING') {
+          handleAccept();
+        }
+      } catch (error) {
+        console.error('Error fetching invitation:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load invitation details',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchInvitation();
+  }, [params, toast, handleAccept]);
 
   if (isLoading) {
     return (

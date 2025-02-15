@@ -82,8 +82,9 @@ export default async function OrganizationPage({
   }
 
   // Get the current user's role in the organization
-  const userMember = organization.members.find(member => member.userId === session.user.id);
-  const isAdminOrOwner = userMember && [UserRole.ADMIN, UserRole.OWNER].includes(userMember.role);
+  const userMember = organization.members.find(member => member.userId === session?.user?.id);
+  const adminRoles = [UserRole.ADMIN, UserRole.OWNER] as const;
+  const isAdminOrOwner = userMember && adminRoles.includes(userMember.role as typeof adminRoles[number]);
 
   return (
     <div className="container mx-auto py-8">

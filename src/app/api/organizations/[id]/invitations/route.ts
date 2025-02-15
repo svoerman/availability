@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { randomBytes } from 'crypto';
 import { UserRole } from '@prisma/client';
-import { Invitation, Organization, User } from '@prisma/client';
+
 import { createTransport } from 'nodemailer';
 import { isEmail } from '@/lib/utils'; // Fix email validation import
 
@@ -136,7 +136,8 @@ export async function POST(
     let body;
     try {
       body = await request.json();
-    } catch (e) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_e) {
       return NextResponse.json(
         { error: 'Invalid request body' },
         { status: 400 }

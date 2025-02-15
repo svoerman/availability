@@ -62,7 +62,7 @@ export default async function Projects({ searchParams }: Props) {
     redirect("/organizations");
   }
 
-  const projects = await prisma.project.findMany({
+  const projects: ProjectWithMembers[] = await prisma.project.findMany({
     where: {
       organizationId: orgId ?? {
         in: user.organizations.map(member => member.organizationId)

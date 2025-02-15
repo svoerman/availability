@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { UserRole } from "@prisma/client";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateOrganizationDialog } from "./create-organization-dialog";
@@ -47,7 +47,10 @@ export default async function OrganizationsPage() {
   }
 
   // Store session user for use in the component
-  const sessionUser = session.user;
+  const sessionUser = session?.user;
+  if (!sessionUser?.id) {
+    redirect('/login');
+  }
   const organizations = await getOrganizations(sessionUser.id);
 
   return (
