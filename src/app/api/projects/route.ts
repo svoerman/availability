@@ -308,32 +308,67 @@ export async function POST(request: Request) {
       );
     }
 
+    // First create the project
     const project = await prisma.project.create({
       data: {
         name,
         description,
         startDate: new Date(startDate),
         sprintStartDay: sprintStartDay || 1,
-        organizationId,
+        organization: {
+          connect: { id: organizationId }
+        },
         createdBy: {
           connect: { id: user.id }
         },
-        members: {
-          connect: [
-            { id: user.id },
-            ...(memberIds || []).map((id: string) => ({ id }))
-          ],
-        },
       },
+    });
+
+    // Then create ProjectMember records for all members
+    const memberPromises = [
+      // Always add the creator
+      prisma.projectMember.create({
+        data: {
+          projectId: project.id,
+          userId: user.id,
+        },
+      }),
+      // Add other members if specified
+      ...(memberIds || []).map((id: string) =>
+        prisma.projectMember.create({
+          data: {
+            projectId: project.id,
+            userId: id,
+          },
+        })
+      ),
+    ];
+
+    await Promise.all(memberPromises);
+
+    // Fetch the complete project with members
+    const completeProject = await prisma.project.findUnique({
+      where: { id: project.id },
       include: {
-        members: true,
+        members: {
+          include: {
+            user: true,
+          },
+        },
         organization: true,
       },
     });
 
-    return NextResponse.json(project);
+    if (!completeProject) {
+      return NextResponse.json(
+        { error: 'Failed to create project' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(completeProject);
   } catch (error) {
-    console.error('Error creating project:', error);
+    console.error('Error creating project:', error instanceof Error ? error.message : error);
     return NextResponse.json(
       { error: 'Failed to create project' },
       { status: 500 }
