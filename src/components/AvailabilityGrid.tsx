@@ -2,11 +2,24 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format, addWeeks, startOfWeek, addDays } from 'date-fns';
-import { User, DayPart, Project } from '@prisma/client';
+import { DayPart, Project } from '@prisma/client';
 import { Status } from '@/types/prisma';
 
 type Props = {
-  project: Project & { members: User[] };
+  project: Project & {
+    members: {
+      id: string;
+      name: string;
+      email: string;
+    }[];
+    organization: {
+      id: string;
+      name: string;
+      createdAt: Date;
+      updatedAt: Date;
+      description: string | null;
+    } | null;
+  };
 };
 
 type Availability = {

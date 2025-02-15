@@ -98,8 +98,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const organizationId = parseInt(request.nextUrl.pathname.split('/')[3]);
-    if (isNaN(organizationId)) {
+    const organizationId = request.nextUrl.pathname.split('/')[3];
+    if (!organizationId) {
       return NextResponse.json({ error: 'Invalid organization ID' }, { status: 400 });
     }
 

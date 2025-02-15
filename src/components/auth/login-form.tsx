@@ -7,28 +7,6 @@ import { FormField, inputClassName } from "@/components/ui/form-field";
 import { useFormStatus } from "react-dom";
 import { useState } from "react";
 
-async function loginAction(formData: FormData) {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const callbackUrl = formData.get("callbackUrl") as string;
-
-  try {
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-      callbackUrl,
-    });
-
-    if (result?.error) {
-      return { error: "Invalid email or password" };
-    }
-    return { success: true };
-  } catch {
-    return { error: "Something went wrong" };
-  }
-}
-
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
@@ -41,7 +19,7 @@ function SubmitButton() {
 export function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get("callbackUrl") ?? "/projects";
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | undefined>(undefined);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -71,37 +49,43 @@ export function LoginForm() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <input type="hidden" name="callbackUrl" value={callbackUrl} />
           
-          <FormField
-            label="Email"
-            error={error}
-            className="space-y-2"
-          >
-            <input
-              type="email"
-              name="email"
-              className={inputClassName}
-              required
-              aria-label="Email address"
-              autoComplete="email"
-            />
-          </FormField>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <FormField
+                id="email"
+                label="Email"
+                error={error}
+              >
+                <input
+                  type="email"
+                  name="email"
+                  className={inputClassName}
+                  required
+                  aria-label="Email address"
+                  autoComplete="email"
+                />
+              </FormField>
+            </div>
 
-          <FormField
-            label="Password"
-            error={error}
-            className="space-y-2"
-          >
-            <input
-              type="password"
-              name="password"
-              className={inputClassName}
-              required
-              aria-label="Password"
-              autoComplete="current-password"
-            />
-          </FormField>
+            <div className="space-y-2">
+              <FormField
+                id="password"
+                label="Password"
+                error={error}
+              >
+                <input
+                  type="password"
+                  name="password"
+                  className={inputClassName}
+                  required
+                  aria-label="Password"
+                  autoComplete="current-password"
+                />
+              </FormField>
+            </div>
 
-          <SubmitButton />
+            <SubmitButton />
+          </div>
         </form>
 
         <div className="relative">

@@ -8,7 +8,6 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Calendar } from 'lucide-react';
-import { Project, User } from '@prisma/client';
 
 type Props = {
   params: Promise<{ id: string }>,

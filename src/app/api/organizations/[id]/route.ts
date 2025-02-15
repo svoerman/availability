@@ -110,7 +110,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { z } from 'zod';
+import { z, type ZodError } from 'zod';
 import { UserRole } from '@prisma/client';
 
 const updateOrganizationSchema = z.object({
@@ -189,8 +189,7 @@ export async function GET(
 }
 
 export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  request: Request
 ) {
   try {
     const session = await auth();
@@ -199,7 +198,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const organizationId = params.id;
+    const url = new URL(request.url);
+    const organizationId = url.pathname.split('/')[3];
     if (!organizationId) {
       return NextResponse.json({ error: 'Invalid organization ID' }, { status: 400 });
     }
@@ -225,7 +225,7 @@ export async function PATCH(
     }
 
     const json = await request.json();
-    const validatedData = updateOrganizationSchema.safeParse(json);
+    const validatedData = updateOrganizationSchema.safeParse(json) as { success: true; data: UpdateOrganizationInput } | { success: false; error: ZodError };
 
     if (!validatedData.success) {
       return NextResponse.json(
@@ -252,8 +252,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  request: Request
 ) {
   try {
     const session = await auth();
@@ -262,7 +261,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const organizationId = params.id;
+    const url = new URL(request.url);
+    const organizationId = url.pathname.split('/')[3];
     if (!organizationId) {
       return NextResponse.json({ error: 'Invalid organization ID' }, { status: 400 });
     }

@@ -4,11 +4,22 @@ import { format } from 'date-fns';
 import { prisma } from '@/lib/db';
 import NewProjectButton from '@/components/NewProjectButton';
 import Link from 'next/link';
-import { Project, User } from '@prisma/client';
+import { Project } from '@prisma/client';
 
 // Create a custom type that extends the Prisma Project type
 type ProjectWithMembers = Project & {
-  members: Pick<User, 'id' | 'name' | 'image'>[]
+  members: {
+    id: string;
+    name: string;
+    image: string | null;
+  }[];
+  organization: {
+    id: string;
+    name: string;
+    createdAt: Date;
+    updatedAt: Date;
+    description: string | null;
+  } | null
 };
 
 type Props = {
@@ -23,7 +34,7 @@ export default async function Projects({ searchParams }: Props) {
   }
 
   const params = await searchParams;
-  const orgId = params.org ? parseInt(params.org) : null;
+  const orgId = params.org || null;
 
   if (!session?.user?.email) {
     redirect("/login");
@@ -47,11 +58,11 @@ export default async function Projects({ searchParams }: Props) {
   }
 
   // Verify user has access to the requested organization
-  if (orgId && !user.organizations.some(member => member.organizationId === orgId)) {
+  if (orgId && !user.organizations.some(member => member.organizationId === orgId.toString())) {
     redirect("/organizations");
   }
 
-  const projects: ProjectWithMembers[] = await prisma.project.findMany({
+  const projects = await prisma.project.findMany({
     where: {
       organizationId: orgId ?? {
         in: user.organizations.map(member => member.organizationId)

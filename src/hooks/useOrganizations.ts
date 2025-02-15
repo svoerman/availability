@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 
 interface Organization {
-  id: number;
+  id: string;
   name: string;
 }
 
-export function useOrganizations(initialOrgId: number | null | undefined) {
+export function useOrganizations(initialOrgId: string | null | undefined) {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [organizationId, setOrganizationId] = useState<number>(initialOrgId || 0);
+  const [organizationId, setOrganizationId] = useState<string | null>(initialOrgId || null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

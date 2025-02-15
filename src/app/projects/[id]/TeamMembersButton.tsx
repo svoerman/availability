@@ -1,15 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { Project, User } from '@prisma/client';
+import { Project } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import TeamMembersForm from '@/components/TeamMembersForm';
 import { Users } from 'lucide-react';
 
 interface Props {
   project: Project & { 
-    members: User[]; 
-    organizationId: string | null;
+    members: {
+      id: string;
+      name: string;
+      email: string;
+    }[];
+    organization: {
+      id: string;
+      name: string;
+      createdAt: Date;
+      updatedAt: Date;
+      description: string | null;
+    } | null;
   };
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
@@ -36,7 +36,7 @@ type OrganizationWithMembers = Organization & {
 };
 
 export default function OrganizationMembersPage() {
-  const params = useParams();
+  const params = useParams() ?? { id: '' };
   const id = params.id as string;
   const [organization, setOrganization] = useState<OrganizationWithMembers | null>(null);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -46,7 +46,7 @@ export default function OrganizationMembersPage() {
   const { toast } = useToast();
 
   // Fetch organization and members data
-  const fetchOrganization = async () => {
+  const fetchOrganization = useCallback(async () => {
     try {
       const res = await fetch(`/api/organizations/${id}`);
       if (!res.ok) throw new Error('Failed to fetch organization');
@@ -60,7 +60,11 @@ export default function OrganizationMembersPage() {
         variant: 'destructive',
       });
     }
-  };
+  }, [id, toast]);
+
+  useEffect(() => {
+    fetchOrganization();
+  }, [id, fetchOrganization]);
 
   // Handle member invitation
   const handleInvite = async (e: React.FormEvent) => {

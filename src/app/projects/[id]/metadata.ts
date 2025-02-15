@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { prisma } from '@/lib/db';
 
-async function getProject(id: number) {
+async function getProject(id: string) {
   return prisma.project.findUnique({
     where: { id },
     select: { name: true, description: true },
@@ -18,7 +18,7 @@ export async function generateMetadata({
   const resolvedParams = await params;
   const id = resolvedParams.id;
   
-  if (isNaN(id)) {
+  if (!id) {
     return {
       title: 'Project Not Found',
       description: 'The requested project could not be found',

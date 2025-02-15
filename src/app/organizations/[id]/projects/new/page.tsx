@@ -12,12 +12,13 @@ export const metadata: Metadata = {
 };
 
 interface Props {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function NewProjectPage({ params }: Props) {
+  const { id } = await params;
   const session = await auth();
   if (!session?.user?.email) {
     redirect("/auth/signin");
@@ -32,7 +33,7 @@ export default async function NewProjectPage({ params }: Props) {
   }
 
   const organization = await prisma.organization.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       members: {
         where: { userId: user.id },
@@ -46,8 +47,8 @@ export default async function NewProjectPage({ params }: Props) {
 
   // Check if user is member with ADMIN or OWNER role
   const member = organization.members[0];
-  if (!member || ![UserRole.ADMIN, UserRole.OWNER].includes(member.role)) {
-    redirect(`/organizations/${params.id}`);
+  if (!member || !(member.role === UserRole.ADMIN || member.role === UserRole.OWNER)) {
+    redirect(`/organizations/${id}`);
   }
 
   return (

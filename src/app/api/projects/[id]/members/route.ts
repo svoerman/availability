@@ -156,12 +156,12 @@
  *                   type: string
  *                   example: Failed to remove member from project
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { auth } from '@/lib/auth';
 
 export async function POST(
-  request: NextRequest,
+  request: Request
 ) {
   try {
     const session = await auth();
@@ -169,8 +169,9 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const projectId = parseInt(request.nextUrl.pathname.split('/')[3]);
-    if (isNaN(projectId)) {
+    const url = new URL(request.url);
+    const projectId = url.pathname.split('/')[3];
+    if (!projectId) {
       return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 
@@ -200,7 +201,7 @@ export async function POST(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  request: Request
 ) {
   try {
     const session = await auth();
@@ -208,14 +209,15 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const projectId = parseInt(request.nextUrl.pathname.split('/')[3]);
-    if (isNaN(projectId)) {
+    const url = new URL(request.url);
+    const projectId = url.pathname.split('/')[3];
+    if (!projectId) {
       return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 
     // Get the user ID from query parameters
-    const userId = Number(request.nextUrl.searchParams.get('userId'));
-    if (isNaN(userId)) {
+    const userId = url.searchParams.get('userId');
+    if (!userId) {
       return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
     }
 

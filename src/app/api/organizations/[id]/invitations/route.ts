@@ -30,11 +30,23 @@ export async function POST(
       );
     }
 
+    // Get user
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
     // Check if user has permission to invite members
     const membership = await prisma.organizationMember.findFirst({
       where: {
         organizationId: params.id,
-        userId: session.user.id,
+        userId: user.id,
         role: {
           in: [UserRole.OWNER, UserRole.ADMIN],
         },
@@ -98,7 +110,7 @@ export async function POST(
         email,
         token,
         organizationId: params.id,
-        inviterId: session.user.id,
+        inviterId: user.id,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       },
       include: {
@@ -127,9 +139,9 @@ export async function POST(
 
       console.log('Email send result:', emailResult);
 
-      if (!emailResult.id) {
+      if (!emailResult?.data?.id) {
         console.error('Email send failed - no ID returned:', emailResult);
-        throw new Error(`Failed to send email: no email ID returned. Full response: ${JSON.stringify(emailResult)}`);
+        throw new Error(`Failed to send email: no email ID returned. Full response: ${JSON.stringify(emailResult?.data)}`);
       }
 
       console.log('Invitation email sent successfully to:', email);

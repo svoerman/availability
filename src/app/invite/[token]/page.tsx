@@ -7,9 +7,9 @@ import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 type Props = {
-  params: {
+  params: Promise<{
     token: string;
-  };
+  }>;
 };
 
 type InvitationDetails = {
@@ -33,8 +33,9 @@ export default function InvitationPage({ params }: Props) {
 
   useEffect(() => {
     const fetchInvitation = async () => {
+      const resolvedParams = await params;
       try {
-        const res = await fetch(`/api/invitations/${params.token}`);
+        const res = await fetch(`/api/invitations/${resolvedParams.token}`);
         if (!res.ok) throw new Error('Failed to fetch invitation');
         const data = await res.json();
         setInvitation(data);
@@ -51,12 +52,13 @@ export default function InvitationPage({ params }: Props) {
     };
 
     fetchInvitation();
-  }, [params.token, toast]);
+  }, [params, toast]);
 
   const handleAccept = async () => {
     setIsAccepting(true);
     try {
-      const res = await fetch(`/api/invitations/${params.token}/accept`, {
+      const resolvedParams = await params;
+    const res = await fetch(`/api/invitations/${resolvedParams.token}/accept`, {
         method: 'POST',
       });
 

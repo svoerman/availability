@@ -14,17 +14,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useState } from "react";
-import { useFormStatus } from "react-dom";
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? "Creating..." : "Create Organization"}
-    </Button>
-  );
-}
-
 export function CreateOrganizationDialog() {
   const router = useRouter();
   const [open, setOpen] = useState(false);

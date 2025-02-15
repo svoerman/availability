@@ -23,11 +23,11 @@ export interface ProjectFormData {
   description: string;
   startDate: string;
   sprintStartDay: number;
-  organizationId: number;
+  organizationId: string;
 }
 
 interface Props {
-  initialData?: Project;
+  initialData?: Partial<Project>;
   onSubmit: (data: ProjectFormData) => Promise<void>;
   onCancel: () => void;
   submitLabel: string;
@@ -93,8 +93,8 @@ export default function ProjectForm({
       {!initialData && organizations.length > 1 && (
         <FormField id="organization" label="Organization">
           <Select
-            value={organizationId.toString()}
-            onValueChange={(value) => setOrganizationId(Number(value))}
+            value={organizationId || ''}
+            onValueChange={(value) => setOrganizationId(value)}
             required
           >
             <SelectTrigger>

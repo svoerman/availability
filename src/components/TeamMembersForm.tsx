@@ -3,13 +3,10 @@
 import { useState, useTransition, useEffect } from 'react';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { Button } from '@/components/ui/button';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useFormSubmit } from '@/hooks/useFormSubmit';
-import { Command as CommandPrimitive } from "cmdk";
-import { Dialog } from "@radix-ui/react-dialog";
 
 interface Props {
   project: {
@@ -25,7 +22,7 @@ interface Props {
 export default function TeamMembersForm({ project, open, onOpenChange }: Props) {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [openCombobox, setOpenCombobox] = useState(false);
+  const [_openCombobox, _setOpenCombobox] = useState(false);
   const [organizationMembers, setOrganizationMembers] = useState<Array<{ id: string; name: string; email: string }>>([]);
   const [isPending, startTransition] = useTransition();
 

@@ -46,7 +46,7 @@ export async function POST(
       }
 
       // Verify the invitation is for the authenticated user
-      if (invitation.email.toLowerCase() !== session.user.email.toLowerCase()) {
+      if (!session?.user?.email || invitation.email.toLowerCase() !== session.user.email.toLowerCase()) {
         throw new Error('Invitation is for a different email address');
       }
 
@@ -54,7 +54,7 @@ export async function POST(
       const existingMembership = await tx.organizationMember.findFirst({
         where: {
           organizationId: invitation.organizationId,
-          user: { email: session.user.email },
+          user: { email: session.user?.email },
         },
       });
 
@@ -62,11 +62,20 @@ export async function POST(
         throw new Error('You are already a member of this organization');
       }
 
+      // Get user ID
+      const user = await tx.user.findUnique({
+        where: { email: session.user?.email }
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
       // Create organization membership
       const membership = await tx.organizationMember.create({
         data: {
           organizationId: invitation.organizationId,
-          userId: session.user.id,
+          userId: user.id,
           role: UserRole.MEMBER,
         },
         include: {

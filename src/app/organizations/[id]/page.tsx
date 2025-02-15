@@ -35,7 +35,7 @@ async function getOrganization(id: string, userId: string) {
   }
 
   // Check if user is admin or owner
-  const userRole = organization.members.find(m => m.user.id === Number(userId))?.role;
+  const userRole = organization.members.find(m => m.user.id === userId)?.role;
   const canManageSettings = userRole === UserRole.ADMIN || userRole === UserRole.OWNER;
 
   return {

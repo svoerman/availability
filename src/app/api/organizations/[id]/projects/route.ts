@@ -12,12 +12,12 @@ const projectSchema = z.object({
 });
 
 export async function POST(
-  request: Request,
-  context: { params: { id: string } }
+  request: Request
 ) {
   try {
     // Get organization ID from URL
-    const organizationId = context.params.id;
+    const url = new URL(request.url);
+    const organizationId = url.pathname.split('/')[3];
 
     const session = await auth();
     if (!session?.user?.email) {
@@ -119,12 +119,12 @@ export async function POST(
 }
 
 export async function GET(
-  request: Request,
-  context: { params: { id: string } }
+  request: Request
 ) {
   try {
     // Get organization ID from URL
-    const organizationId = context.params.id;
+    const url = new URL(request.url);
+    const organizationId = url.pathname.split('/')[3];
 
     const session = await auth();
     if (!session?.user?.email) {

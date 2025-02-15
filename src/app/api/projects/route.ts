@@ -117,7 +117,7 @@ export async function GET() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const organizationIds = user.organizations.map((member: { organizationId: number }) => member.organizationId);
+    const organizationIds = user.organizations.map((member: { organizationId: string }) => member.organizationId);
 
     const projects = await prisma.project.findMany({
       where: {
@@ -315,10 +315,13 @@ export async function POST(request: Request) {
         startDate: new Date(startDate),
         sprintStartDay: sprintStartDay || 1,
         organizationId,
+        createdBy: {
+          connect: { id: user.id }
+        },
         members: {
           connect: [
             { id: user.id },
-            ...(memberIds || []).map((id: number) => ({ id }))
+            ...(memberIds || []).map((id: string) => ({ id }))
           ],
         },
       },
