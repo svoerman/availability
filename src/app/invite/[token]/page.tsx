@@ -87,12 +87,17 @@ export default function InvitationPage({ params }: Props) {
         throw new Error(data.error || 'Failed to accept invitation');
       }
 
+      if (!data.organizationId) {
+        console.error('Invalid response:', data);
+        throw new Error('Invalid response from server');
+      }
+
       toast({
         title: 'Success',
-        description: 'You have successfully joined the organization',
+        description: `You have successfully joined ${data.organizationName}`,
       });
 
-      // Redirect to the organization page using the organization ID from the response
+      // Redirect to the organization page
       router.push(`/organizations/${data.organizationId}`);
     } catch (error) {
       console.error('Error accepting invitation:', error);

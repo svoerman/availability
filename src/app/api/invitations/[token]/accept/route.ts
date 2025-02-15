@@ -164,21 +164,16 @@ export async function POST(
           });
           
           try {
-            // Create project membership if it doesn't exist
-            const projectMember = await tx.projectMember.upsert({
-              where: {
-                projectId_userId: {
-                  projectId: project.id,
-                  userId: user.id
+            // Connect user to project using many-to-many relationship
+            await tx.user.update({
+              where: { id: user.id },
+              data: {
+                projects: {
+                  connect: { id: project.id }
                 }
-              },
-              create: {
-                projectId: project.id,
-                userId: user.id
-              },
-              update: {}
+              }
             });
-            console.log('Created/updated project membership:', projectMember);
+            console.log('Connected user to project');
           } catch (e) {
             console.error('Error creating project membership:', e);
             throw e;
@@ -192,17 +187,10 @@ export async function POST(
         data: { status: 'ACCEPTED' },
       });
 
-      // Update invitation status
-      await tx.invitation.update({
-        where: { id: invitation.id },
-        data: { status: 'ACCEPTED' },
-      });
-
       console.log('Transaction completed successfully');
       return {
-        membership: createdMembership,
         organizationId: invitation.organizationId,
-        organization: invitation.organization,
+        organizationName: invitation.organization.name,
       };
     });
 
