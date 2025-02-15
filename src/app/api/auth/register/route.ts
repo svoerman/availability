@@ -158,13 +158,16 @@ export async function POST(request: Request) {
                   throw new Error('Invalid project for this organization');
                 }
 
-                // Update user to connect with project
-                await tx.user.update({
-                  where: { id: user.id },
+                // Create project membership
+                await tx.projectMember.create({
                   data: {
-                    projects: {
+                    project: {
                       connect: { id: metadata.projectId }
-                    }
+                    },
+                    user: {
+                      connect: { id: user.id }
+                    },
+                    role: 'MEMBER'
                   }
                 });
               }

@@ -9,8 +9,11 @@ type Props = {
   project: Project & {
     members: {
       id: string;
-      name: string;
-      email: string;
+      user: {
+        id: string;
+        name: string;
+        email: string;
+      };
     }[];
     organization: {
       id: string;
@@ -60,6 +63,23 @@ export default function AvailabilityGrid({ project }: Props) {
   const [selectionStart, setSelectionStart] = useState<CellPosition | null>(null);
   const [selectedCells, setSelectedCells] = useState<CellPosition[]>([]);
 
+  // Fetch initial availability data
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      try {
+        const response = await fetch(`/api/availability?projectId=${project.id}`);
+        if (!response.ok) throw new Error('Failed to fetch availability');
+        const data = await response.json();
+        setAvailabilityData(data);
+      } catch (error) {
+        console.error('Error fetching availability:', error);
+      }
+    };
+
+    fetchAvailability();
+  }, [project.id, currentWeekStart]);
+
+  // Listen for real-time updates
   useEffect(() => {
     const es = new EventSource('/api/availability-updates');
     
@@ -523,38 +543,38 @@ export default function AvailabilityGrid({ project }: Props) {
           ))}
 
           {/* Grid */}
-          {projectMembers.map((user) => (
-            <div key={user.id} className="contents">
+          {projectMembers.map((member) => (
+            <div key={member.id} className="contents">
               <div
                 className="sticky left-0 bg-white z-10 py-2 pr-4 font-medium border-b"
               >
-                {user.name}
+                {member.user.name}
               </div>
               {dates.map((date) => (
                 <div
-                  key={`${user.id}-${date.toString()}`}
+                  key={`${member.user.id}-${date.toString()}`}
                   className="flex gap-x-[1px] border-b bg-gray-300"
                 >
                   {(['MORNING', 'AFTERNOON'] as DayPart[]).map((dayPart) => {
-                    const status = getAvailability(user.id, date, dayPart);
+                    const status = getAvailability(member.user.id, date, dayPart);
                     const withinDates = isWithinProjectDates(date);
-                    const isSelected = isCellSelected(user.id, date, dayPart);
+                    const isSelected = isCellSelected(member.user.id, date, dayPart);
                     return (
                       <button
-                        key={`${user.id}-${date.toString()}-${dayPart}`}
+                        key={`${member.user.id}-${date.toString()}-${dayPart}`}
                         className={`${getStatusColor(
                           status as Status,
                           date
                         )} flex-1 h-16 transition-colors ${
                           withinDates ? 'cursor-pointer' : 'cursor-not-allowed'
                         } ${isSelected ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
-                        onMouseDown={() => handleMouseDown(user.id, date, dayPart)}
-                        onMouseEnter={() => handleMouseEnter(user.id, date, dayPart)}
+                        onMouseDown={() => handleMouseDown(member.user.id, date, dayPart)}
+                        onMouseEnter={() => handleMouseEnter(member.user.id, date, dayPart)}
                         onMouseUp={handleMouseUp}
                         onClick={() => 
                           withinDates && 
                           !isDragging && 
-                          handleCellClick(user.id, date, dayPart)
+                          handleCellClick(member.user.id, date, dayPart)
                         }
                         disabled={!withinDates}
                         title={`${format(date, 'd MMM')} - ${dayPart.toLowerCase()}\nStatus: ${status.toLowerCase().replace(/_/g, ' ')}`}

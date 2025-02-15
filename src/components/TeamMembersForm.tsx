@@ -13,7 +13,14 @@ interface Props {
     id: string;
     name: string;
     organizationId: string | null;
-    members: { id: string; name: string; email: string }[];
+    members: {
+      id: string;
+      user: {
+        id: string;
+        name: string;
+        email: string;
+      };
+    }[];
   };
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -56,7 +63,7 @@ export default function TeamMembersForm({ project, open, onOpenChange }: Props) 
   }, [open, project?.organizationId, organizationMembers.length, isPending, setError, project.members]);
 
   const availableMembers = organizationMembers.filter(member => {
-    const isMember = project.members.some(projectMember => projectMember.id === member.id);
+    const isMember = project.members.some(projectMember => projectMember.user.id === member.id);
     return !isMember;
   });
 
@@ -149,13 +156,13 @@ export default function TeamMembersForm({ project, open, onOpenChange }: Props) 
               {project.members.map((member) => (
                 <div key={member.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
                   <div className="overflow-hidden">
-                    <div className="font-medium truncate">{member.name}</div>
-                    <div className="text-sm text-gray-500 truncate">{member.email}</div>
+                    <div className="font-medium truncate">{member.user.name}</div>
+                    <div className="text-sm text-gray-500 truncate">{member.user.email}</div>
                   </div>
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => submit(`/api/projects/${project.id}/members/${member.id}`, {
+                    onClick={() => submit(`/api/projects/${project.id}/members/${member.user.id}`, {
                       method: 'DELETE',
                       data: {},
                     })}

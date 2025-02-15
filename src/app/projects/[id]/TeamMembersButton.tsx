@@ -10,8 +10,11 @@ interface Props {
   project: Project & { 
     members: {
       id: string;
-      name: string;
-      email: string;
+      user: {
+        id: string;
+        name: string;
+        email: string;
+      };
     }[];
     organization: {
       id: string;

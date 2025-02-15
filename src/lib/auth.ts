@@ -161,29 +161,50 @@ export const config = {
     },
 
     async jwt({ token, user }): Promise<ExtendedJWT> {
+      if (!token) {
+        throw new Error('No token provided');
+      }
+
       if (user) {
+        // Update token with user data on sign in
         token.id = user.id;
         token.email = user.email;
+        
         // Pass through any organizationId from the user
         const userWithOrg = user as { organizationId?: string };
         if (userWithOrg.organizationId) {
           (token as { organizationId?: string }).organizationId = userWithOrg.organizationId;
         }
       }
+
+      // Ensure required fields exist
+      if (!token.id || !token.email) {
+        throw new Error('Token missing required fields');
+      }
+
       return token as ExtendedJWT;
     },
 
     async session({ session, token }): Promise<ExtendedSession> {
+      if (!token || !session?.user) {
+        throw new Error('No token or user in session');
+      }
+
+      if (!token.id || !token.email) {
+        throw new Error('Token missing required fields');
+      }
+
       // Pass through any organizationId from the token
       const tokenWithOrg = token as { organizationId?: string };
       if (tokenWithOrg.organizationId) {
         (session as { organizationId?: string }).organizationId = tokenWithOrg.organizationId;
       }
-      if (token) {
-        session.user.id = token.id as string;
-        session.user.email = token.email as string;
-      }
-      return session;
+
+      // Update session with token data
+      session.user.id = token.id;
+      session.user.email = token.email;
+      
+      return session as ExtendedSession;
     },
 
   }

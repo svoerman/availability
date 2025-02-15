@@ -9,9 +9,10 @@ import { Project } from '@prisma/client';
 // Create a custom type that extends the Prisma Project type
 type ProjectWithMembers = Project & {
   members: {
-    id: string;
-    name: string;
-    image: string | null;
+    user: {
+      id: string;
+      email: string;
+    };
   }[];
   organization: {
     id: string;
@@ -71,10 +72,13 @@ export default async function Projects({ searchParams }: Props) {
     include: {
       organization: true,
       members: {
-        select: {
-          id: true,
-          name: true,
-          image: true
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true
+            }
+          }
         }
       }
     },
@@ -116,7 +120,7 @@ export default async function Projects({ searchParams }: Props) {
                     key={member.id}
                     className="px-2 py-1 bg-gray-100 rounded-full text-sm"
                   >
-                    {member.name}
+                    {member.user.email}
                   </span>
                 ))}
               </div>

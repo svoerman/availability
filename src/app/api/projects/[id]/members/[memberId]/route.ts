@@ -12,19 +12,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid project or member ID' }, { status: 400 });
     }
 
-    // Connect the user to the project
-    await prisma.project.update({
-      where: { id: projectId },
+    // Create a new ProjectMember
+    await prisma.projectMember.create({
       data: {
-        members: {
-          connect: { id: memberId },
+        project: {
+          connect: { id: projectId }
         },
+        user: {
+          connect: { id: memberId }
+        },
+        role: 'MEMBER'
       },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error adding member to project:', error);
+    console.error('Error adding member to project:', error instanceof Error ? error.message : error);
     return NextResponse.json({ error: 'Failed to add member to project' }, { status: 500 });
   }
 }
@@ -40,19 +43,19 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid project or member ID' }, { status: 400 });
     }
 
-    // Only disconnect the user from the project
-    await prisma.project.update({
-      where: { id: projectId },
-      data: {
-        members: {
-          disconnect: { id: memberId },
-        },
-      },
+    // Delete the ProjectMember
+    await prisma.projectMember.delete({
+      where: {
+        projectId_userId: {
+          projectId,
+          userId: memberId
+        }
+      }
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error removing member from project:', error);
+    console.error('Error removing member from project:', error instanceof Error ? error.message : error);
     return NextResponse.json({ error: 'Failed to remove member from project' }, { status: 500 });
   }
 }

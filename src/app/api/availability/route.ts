@@ -192,7 +192,11 @@ export async function GET(request: Request) {
       where: { id: projectId },
       include: {
         members: {
-          select: { id: true }
+          include: {
+            user: {
+              select: { id: true }
+            }
+          }
         }
       }
     });
@@ -208,7 +212,7 @@ export async function GET(request: Request) {
     const availability = await prisma.availability.findMany({
       where: {
         userId: {
-          in: project.members.map(member => member.id)
+          in: project.members.map(member => member.user.id)
         }
       },
       include: {

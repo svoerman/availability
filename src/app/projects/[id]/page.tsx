@@ -25,10 +25,14 @@ async function getProjectData(projectId: string) {
       where: { id: projectId },
       include: { 
         members: {
-          select: {
-            id: true,
-            name: true,
-            email: true
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
           }
         },
         organization: true
@@ -41,7 +45,7 @@ async function getProjectData(projectId: string) {
 
     return project;
   } catch (error) {
-    console.error('Error fetching project:', error);
+    console.error('Error fetching project:', error instanceof Error ? error.message : error);
     return null;
   }
 }
