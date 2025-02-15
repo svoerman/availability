@@ -187,7 +187,7 @@ export async function GET(request: Request) {
       );
     }
 
-    // Get all members of the project
+    // Get project with members and their availability
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       include: {
@@ -196,6 +196,11 @@ export async function GET(request: Request) {
             user: {
               select: { id: true }
             }
+          }
+        },
+        availability: {
+          include: {
+            user: true
           }
         }
       }
@@ -211,6 +216,7 @@ export async function GET(request: Request) {
     // Get availability for all project members
     const availability = await prisma.availability.findMany({
       where: {
+        projectId: project.id,
         userId: {
           in: project.members.map(member => member.user.id)
         }
@@ -233,10 +239,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { userId, date, dayPart, status } = await request.json();
+    const { userId, projectId, date, dayPart, status } = await request.json();
 
     // Validate input
-    if (!userId || !date || !dayPart || status === undefined) {
+    if (!userId || !projectId || !date || !dayPart || status === undefined) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -258,6 +264,23 @@ export async function POST(request: Request) {
       );
     }
 
+    // Verify user is a member of the project
+    const projectMember = await prisma.projectMember.findUnique({
+      where: {
+        projectId_userId: {
+          projectId,
+          userId
+        }
+      }
+    });
+
+    if (!projectMember) {
+      return NextResponse.json(
+        { error: 'User is not a member of this project' },
+        { status: 403 }
+      );
+    }
+
     // Parse the date string to ensure it's in the correct format
     const parsedDate = new Date(date);
     if (isNaN(parsedDate.getTime())) {
@@ -270,8 +293,9 @@ export async function POST(request: Request) {
     // Create or update availability
     const availability = await prisma.availability.upsert({
       where: {
-        userId_date_dayPart: {
+        userId_projectId_date_dayPart: {
           userId,
+          projectId,
           date: parsedDate,
           dayPart,
         },
@@ -281,6 +305,7 @@ export async function POST(request: Request) {
       },
       create: {
         userId,
+        projectId,
         date: parsedDate,
         dayPart,
         status,

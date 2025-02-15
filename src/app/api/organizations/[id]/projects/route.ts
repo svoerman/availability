@@ -84,8 +84,9 @@ export async function POST(
         organizationId,
         createdById: user.id,
         members: {
-          connect: [{
-            id: user.id
+          create: [{
+            userId: user.id,
+            role: UserRole.OWNER
           }]
         },
       },

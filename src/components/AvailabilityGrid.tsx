@@ -179,7 +179,6 @@ export default function AvailabilityGrid({ project }: Props) {
       statusToSet = statusOrder[(currentIndex + 1) % statusOrder.length];
     }
 
-
     const response = await fetch('/api/availability', {
       method: 'POST',
       headers: {
@@ -187,6 +186,7 @@ export default function AvailabilityGrid({ project }: Props) {
       },
       body: JSON.stringify({
         userId,
+        projectId: project.id,
         date: format(date, 'yyyy-MM-dd'),
         dayPart,
         status: statusToSet,

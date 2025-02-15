@@ -117,7 +117,10 @@ async function main() {
         organizationId: kabisa.id,
         createdById: users[0].id, // Rob creates this project
         members: {
-          connect: users.slice(0, 5).map(user => ({ id: user.id })) // First 5 users
+          create: users.slice(0, 5).map(user => ({
+            userId: user.id,
+            role: 'MEMBER'
+          })) // First 5 users
         },
         sprints: {
           create: [
@@ -142,7 +145,10 @@ async function main() {
         organizationId: kabisa.id,
         createdById: users[1].id, // Martijn creates this project
         members: {
-          connect: users.slice(1, 4).map(user => ({ id: user.id })) // Users 2-4
+          create: users.slice(1, 4).map(user => ({
+            userId: user.id,
+            role: 'MEMBER'
+          })) // Users 2-4
         },
         sprints: {
           create: [
@@ -166,7 +172,10 @@ async function main() {
         organizationId: kabisa.id,
         createdById: users[0].id, // Rob creates this project
         members: {
-          connect: users.slice(0, 3).map(user => ({ id: user.id })) // First 3 users
+          create: users.slice(0, 3).map(user => ({
+            userId: user.id,
+            role: 'MEMBER'
+          })) // First 3 users
         },
         sprints: {
           create: [

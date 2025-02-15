@@ -40,6 +40,7 @@ model Project {
   organization   Organization? @relation(fields: [organizationId], references: [id])
   organizationId String?
   sprints        Sprint[]
+  availability   Availability[]
   createdById    String
   createdBy      User         @relation("CreatedProjects", fields: [createdById], references: [id])
   createdAt      DateTime     @default(now())
@@ -68,14 +69,17 @@ model Availability {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   date      DateTime
   dayPart   DayPart
   status    Status
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([userId, date, dayPart])
+  @@unique([userId, projectId, date, dayPart])
   @@index([userId])
+  @@index([projectId])
   @@index([date])
 }
 
